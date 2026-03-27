@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analizador OTDR - Flo Networks</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.1.0/dist/chartjs-plugin-annotation.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.2.0/dist/chartjs-plugin-zoom.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: #14161b;
+            color: #e0e6f0;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #0d1525 0%, #162040 100%);
+            border-bottom: 1px solid #1e3a5f;
+            padding: 16px 40px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .header-logo { height: 44px; width: auto; }
+
+        .header-divider {
+            width: 1px;
+            height: 36px;
+            background: #2a4a7f;
+            margin: 0 8px;
+        }
+
+        .header h1 { font-size: 1.4rem; font-weight: 600; color: #60a5fa; }
+        .header p { font-size: 0.82rem; color: #7b8ba8; margin-top: 2px; }
+
+        .container { max-width: 1400px; margin: 0 auto; padding: 30px; }
+
+        .upload-area { margin-bottom: 30px; }
+
+        .upload-zone {
+            border: 2px dashed #2a4a7f;
+            border-radius: 16px;
+            padding: 50px;
+            text-align: center;
+            background: rgba(16, 28, 50, 0.6);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .upload-zone:hover, .upload-zone.dragover {
+            border-color: #60a5fa;
+            background: rgba(30, 58, 95, 0.4);
+            transform: translateY(-2px);
+        }
+        .upload-zone .upload-icon { width: 64px; height: 64px; margin-bottom: 16px; opacity: 0.6; }
+        .upload-zone h2 { font-size: 1.2rem; color: #a0b4d0; margin-bottom: 8px; }
+        .upload-zone p { color: #5a6f8a; font-size: 0.9rem; }
+        .upload-zone input { display: none; }
+
+        .or-divider {
+            text-align: center; color: #5a6f8a; font-size: 0.85rem;
+            margin: 16px 0; position: relative;
+        }
+        .or-divider::before, .or-divider::after {
+            content: ''; position: absolute; top: 50%;
+            width: calc(50% - 30px); height: 1px; background: #1e3a5f;
+        }
+        .or-divider::before { left: 0; }
+        .or-divider::after { right: 0; }
+
+        .drive-input-row {
+            display: flex; gap: 12px; align-items: center;
+        }
+        .drive-input-row input {
+            flex: 1; padding: 12px 16px; border-radius: 10px;
+            border: 1px solid #2a4a7f; background: rgba(16, 28, 50, 0.6);
+            color: #e0e6f0; font-size: 0.9rem;
+        }
+        .drive-input-row input:focus { outline: none; border-color: #60a5fa; }
+        .drive-input-row input::placeholder { color: #5a6f8a; }
+        .btn-drive {
+            padding: 12px 24px; border-radius: 10px; cursor: pointer;
+            font-size: 0.9rem; border: 1px solid rgba(59,130,246,0.4);
+            background: rgba(59,130,246,0.2); color: #60a5fa;
+            white-space: nowrap; transition: all 0.2s;
+        }
+        .btn-drive:hover { background: rgba(59,130,246,0.4); }
+
+        .loading { display: none; text-align: center; padding: 40px; }
+        .loading.active { display: block; }
+        .spinner {
+            width: 48px; height: 48px;
+            border: 3px solid #1e3a5f; border-top-color: #60a5fa;
+            border-radius: 50%; animation: spin 0.8s linear infinite;
+            margin: 0 auto 16px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .results { display: none; }
+        .results.active { display: block; }
+
+        .section {
+            background: rgba(16, 28, 50, 0.6);
+            border: 1px solid #1e3a5f;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+        .section-title {
+            font-size: 1.1rem; color: #60a5fa;
+            margin-bottom: 16px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .section-title svg { width: 20px; height: 20px; }
+
+        .top-bar {
+            display: flex; gap: 12px; margin-bottom: 20px;
+            flex-wrap: wrap; align-items: center;
+        }
+        .btn {
+            background: rgba(30, 58, 95, 0.4); border: 1px solid #2a4a7f;
+            color: #a0b4d0; padding: 10px 24px; border-radius: 8px;
+            cursor: pointer; font-size: 0.9rem; transition: all 0.2s;
+        }
+        .btn:hover { background: rgba(30, 58, 95, 0.7); color: #e0e6f0; }
+        .btn-pdf {
+            background: rgba(220, 38, 38, 0.2); border-color: rgba(220, 38, 38, 0.4); color: #f87171;
+        }
+        .btn-pdf:hover { background: rgba(220, 38, 38, 0.4); color: #fca5a5; }
+
+        .summary-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;
+        }
+        .summary-card {
+            background: rgba(30, 58, 95, 0.3); border: 1px solid #1e3a5f;
+            border-radius: 10px; padding: 18px; text-align: center;
+        }
+        .summary-card .value { font-size: 1.6rem; font-weight: 700; color: #60a5fa; margin-bottom: 4px; }
+        .summary-card .label { font-size: 0.8rem; color: #7b8ba8; text-transform: uppercase; letter-spacing: 0.5px; }
+
+        .threshold-config {
+            display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-end;
+            margin-bottom: 16px; padding: 16px;
+            background: rgba(30, 58, 95, 0.2); border-radius: 8px; border: 1px solid #1e3a5f;
+        }
+        .threshold-group label {
+            display: block; font-size: 0.78rem; color: #7b8ba8;
+            margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .threshold-group input, .ab-group input {
+            width: 110px; padding: 6px 10px; border-radius: 6px;
+            border: 1px solid #2a4a7f; background: rgba(8, 14, 28, 0.6);
+            color: #e0e6f0; font-size: 0.9rem; text-align: center;
+        }
+        .threshold-group input:focus, .ab-group input:focus { outline: none; border-color: #60a5fa; }
+
+        .btn-sm {
+            padding: 6px 18px; border-radius: 6px; cursor: pointer;
+            font-size: 0.85rem; transition: all 0.2s; border: 1px solid;
+        }
+        .btn-sm-blue { background: rgba(59,130,246,0.2); border-color: rgba(59,130,246,0.4); color: #60a5fa; }
+        .btn-sm-blue:hover { background: rgba(59,130,246,0.4); }
+        .btn-sm-green { background: rgba(16,185,129,0.2); border-color: rgba(16,185,129,0.4); color: #34d399; }
+        .btn-sm-green:hover { background: rgba(16,185,129,0.4); }
+        .btn-sm-red { background: rgba(239,68,68,0.15); border-color: rgba(239,68,68,0.3); color: #f87171; }
+        .btn-sm-red:hover { background: rgba(239,68,68,0.3); }
+
+        .meta-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; }
+        .meta-item {
+            display: flex; justify-content: space-between;
+            padding: 8px 12px; background: rgba(30, 58, 95, 0.2); border-radius: 6px;
+        }
+        .meta-item .key { color: #7b8ba8; font-size: 0.85rem; }
+        .meta-item .val { color: #c8d6e8; font-size: 0.85rem; font-weight: 500; }
+
+        .chart-container {
+            position: relative; height: 420px;
+            background: rgba(8, 14, 28, 0.5); border-radius: 8px; padding: 16px;
+        }
+        .chart-hint {
+            font-size: 0.75rem; color: #5a6f8a; text-align: center; margin-top: 6px;
+        }
+
+        .ab-controls {
+            display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-end;
+            margin-top: 16px; padding: 16px;
+            background: rgba(30, 58, 95, 0.2); border-radius: 8px; border: 1px solid #1e3a5f;
+        }
+        .ab-group label {
+            display: block; font-size: 0.78rem; color: #7b8ba8;
+            margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .ab-result {
+            padding: 8px 16px; background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px;
+            font-size: 0.9rem; color: #34d399; min-width: 180px; text-align: center;
+        }
+        .ab-result .ab-label { font-size: 0.75rem; color: #7b8ba8; margin-bottom: 2px; }
+        .ab-result .ab-value { font-size: 1.2rem; font-weight: 700; }
+
+        .events-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        .events-table thead th {
+            background: rgba(30, 58, 95, 0.4); padding: 12px 16px; text-align: left;
+            color: #a0b4d0; font-weight: 600; font-size: 0.8rem;
+            text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #1e3a5f;
+        }
+        .events-table tbody tr { border-bottom: 1px solid rgba(30, 58, 95, 0.3); transition: background 0.2s; }
+        .events-table tbody tr:hover { background: rgba(30, 58, 95, 0.2); }
+        .events-table td { padding: 12px 16px; color: #c8d6e8; }
+
+        .event-badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 0.78rem; font-weight: 600; }
+        .badge-connector { background: rgba(59,130,246,0.2); color: #60a5fa; border: 1px solid rgba(59,130,246,0.3); }
+        .badge-splice { background: rgba(16,185,129,0.2); color: #34d399; border: 1px solid rgba(16,185,129,0.3); }
+        .badge-end { background: rgba(239,68,68,0.2); color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
+        .badge-reflection { background: rgba(251,191,36,0.2); color: #fbbf24; border: 1px solid rgba(251,191,36,0.3); }
+        .badge-default { background: rgba(148,163,184,0.2); color: #94a3b8; border: 1px solid rgba(148,163,184,0.3); }
+
+        .loss-exceeded {
+            background: rgba(251, 191, 36, 0.25) !important; color: #fbbf24 !important;
+            font-weight: 700; border-radius: 4px; padding: 2px 6px;
+        }
+        .loss-negative { color: #34d399; }
+        .loss-positive { color: #f87171; }
+        .loss-zero { color: #94a3b8; }
+
+        .error-msg {
+            display: none; background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 10px;
+            padding: 20px; color: #f87171; text-align: center; margin-bottom: 20px;
+        }
+        .error-msg.active { display: block; }
+
+        @media (max-width: 768px) {
+            .container { padding: 16px; }
+            .upload-zone { padding: 30px; }
+            .chart-container { height: 300px; }
+            .events-table { font-size: 0.78rem; }
+            .events-table td, .events-table th { padding: 8px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <img src="/static/logo-full.svg" alt="Flo Networks" class="header-logo" style="filter: brightness(0) invert(1);">
+        <div class="header-divider"></div>
+        <div>
+            <h1>Analizador OTDR</h1>
+            <p>Analisis de archivos .sor - Reflectometria de fibra optica</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="upload-area" id="uploadArea">
+            <div class="upload-zone" id="uploadZone">
+                <svg class="upload-icon" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M32 8L20 24h8v16h8V24h8L32 8z" fill="#60a5fa" opacity="0.6"/>
+                    <path d="M8 44v8a4 4 0 004 4h40a4 4 0 004-4v-8" stroke="#60a5fa" stroke-width="3" stroke-linecap="round" opacity="0.4"/>
+                </svg>
+                <h2>Arrastra tu archivo .sor aqui</h2>
+                <p>o haz clic para seleccionar un archivo</p>
+                <input type="file" id="fileInput" accept=".sor">
+            </div>
+            <div class="or-divider">o</div>
+            <div class="drive-input-row">
+                <input type="text" id="driveUrl" placeholder="Pega un link de Google Drive (https://drive.google.com/file/d/...)">
+                <button class="btn-drive" onclick="loadFromDrive()">Cargar desde Drive</button>
+            </div>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Analizando archivo .sor...</p>
+        </div>
+
+        <div class="error-msg" id="errorMsg"></div>
+
+        <div class="results" id="results">
+            <div class="top-bar">
+                <button class="btn" onclick="resetApp()">Cargar otro archivo</button>
+                <button class="btn btn-pdf" onclick="exportPDF()">Exportar PDF</button>
+            </div>
+
+            <!-- Summary -->
+            <div class="section" id="sectionSummary">
+                <div class="section-title">
+                    <svg viewBox="0 0 20 20" fill="#60a5fa"><path d="M10 2a8 8 0 100 16 8 8 0 000-16zm1 11H9v-2h2v2zm0-4H9V5h2v4z"/></svg>
+                    Resumen del Enlace
+                </div>
+                <div class="summary-grid" id="summaryGrid"></div>
+            </div>
+
+            <!-- Trace Chart -->
+            <div class="section" id="sectionTrace">
+                <div class="section-title">
+                    <svg viewBox="0 0 20 20" fill="#60a5fa"><path d="M2 16V4h2v10h14v2H2zm4-4V8h2v4H6zm4-6v6h2V6h-2zm4 2v4h2V8h-2z"/></svg>
+                    Trazo OTDR
+                </div>
+                <div class="chart-container">
+                    <canvas id="traceChart"></canvas>
+                </div>
+                <div class="chart-hint">Scroll para zoom | Shift + arrastrar para desplazar | Doble click para resetear zoom | Arrastra las lineas A/B para moverlas</div>
+                <div class="ab-controls">
+                    <div class="ab-group">
+                        <label>Linea A (km)</label>
+                        <input type="number" id="lineA" step="0.001" min="0" placeholder="0.000">
+                    </div>
+                    <div class="ab-group">
+                        <label>Linea B (km)</label>
+                        <input type="number" id="lineB" step="0.001" min="0" placeholder="0.000">
+                    </div>
+                    <button class="btn-sm btn-sm-green" onclick="applyABLines()">Aplicar A-B</button>
+                    <button class="btn-sm btn-sm-red" onclick="clearABLines()">Limpiar A-B</button>
+                    <div class="ab-result" id="abResult" style="display:none;">
+                        <div class="ab-label">Perdida A-B</div>
+                        <div class="ab-value" id="abLossValue">--</div>
+                    </div>
+                    <div class="ab-result" id="abDistance" style="display:none;">
+                        <div class="ab-label">Distancia A-B</div>
+                        <div class="ab-value" id="abDistValue">--</div>
+                    </div>
+                    <div class="ab-result" id="abSlope" style="display:none;">
+                        <div class="ab-label">Pendiente A-B</div>
+                        <div class="ab-value" id="abSlopeValue">--</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Events Table -->
+            <div class="section" id="sectionEvents">
+                <div class="section-title">
+                    <svg viewBox="0 0 20 20" fill="#60a5fa"><path d="M3 3h14a1 1 0 011 1v12a1 1 0 01-1 1H3a1 1 0 01-1-1V4a1 1 0 011-1zm0 4v8h14V7H3z"/></svg>
+                    Tabla de Eventos
+                </div>
+                <div class="threshold-config">
+                    <div class="threshold-group">
+                        <label>Umbral Conector (dB)</label>
+                        <input type="number" id="thrConnector" value="0.5" step="0.01" min="0">
+                    </div>
+                    <div class="threshold-group">
+                        <label>Umbral Empalme (dB)</label>
+                        <input type="number" id="thrSplice" value="0.25" step="0.01" min="0">
+                    </div>
+                    <button class="btn-sm btn-sm-blue" onclick="applyThresholds()">Aplicar Umbrales</button>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table class="events-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Tipo</th>
+                                <th>Distancia (km)</th>
+                                <th>Perdida (dB)</th>
+                                <th>Umbral (dB)</th>
+                                <th>Estado</th>
+                                <th>Reflexion (dB)</th>
+                                <th>Pendiente (dB/km)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="eventsBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Metadata -->
+            <div class="section" id="sectionMeta">
+                <div class="section-title">
+                    <svg viewBox="0 0 20 20" fill="#60a5fa"><path d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 0v12h8V4H6z"/></svg>
+                    Informacion del Equipo y Fibra
+                </div>
+                <div class="meta-grid" id="metaGrid"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let traceChart = null;
+        let currentData = null;
+        let abLineA = null;
+        let abLineB = null;
+        let draggingLine = null; // 'A' or 'B' or null
+
+        let thresholds = { connector: 0.5, splice: 0.25 };
+
+        // Logo as base64 for PDF (will be loaded dynamically)
+        let logoBase64 = null;
+        (function loadLogoForPDF() {
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                canvas.width = img.naturalWidth;
+                canvas.height = img.naturalHeight;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0);
+                logoBase64 = canvas.toDataURL('image/png');
+            };
+            img.src = '/static/logo-full.svg';
+        })();
+
+        // Upload zone
+        const uploadZone = document.getElementById('uploadZone');
+        const fileInput = document.getElementById('fileInput');
+        uploadZone.addEventListener('click', () => fileInput.click());
+        uploadZone.addEventListener('dragover', (e) => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+        uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault(); uploadZone.classList.remove('dragover');
+            if (e.dataTransfer.files.length > 0) processFile(e.dataTransfer.files[0]);
+        });
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) processFile(e.target.files[0]);
+        });
+
+        async function processFile(file) {
+            if (!file.name.toLowerCase().endsWith('.sor')) {
+                showError('Por favor selecciona un archivo .sor valido.'); return;
+            }
+            hideError();
+            document.getElementById('uploadArea').style.display = 'none';
+            document.getElementById('loading').classList.add('active');
+            document.getElementById('results').classList.remove('active');
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('/api/analyze', { method: 'POST', body: formData });
+                const data = await response.json();
+                if (data.error) {
+                    showError(data.error);
+                    document.getElementById('uploadArea').style.display = '';
+                    document.getElementById('loading').classList.remove('active');
+                    return;
+                }
+                currentData = data;
+                currentData._filename = file.name;
+                renderResults(data);
+            } catch (err) {
+                showError('Error de conexion con el servidor: ' + err.message);
+                document.getElementById('uploadArea').style.display = '';
+            } finally {
+                document.getElementById('loading').classList.remove('active');
+            }
+        }
+
+        function renderResults(data) {
+            document.getElementById('results').classList.add('active');
+            const s = data.summary;
+            document.getElementById('summaryGrid').innerHTML = `
+                <div class="summary-card"><div class="value">${s.num_events}</div><div class="label">Eventos</div></div>
+                <div class="summary-card"><div class="value">${s.fiber_length_km} km</div><div class="label">Longitud de fibra</div></div>
+                <div class="summary-card"><div class="value">${s.total_loss_db} dB</div><div class="label">Perdida total</div></div>
+                <div class="summary-card"><div class="value">${s.orl_db} dB</div><div class="label">ORL</div></div>
+                <div class="summary-card"><div class="value">${data.metadata.wavelength_nm}</div><div class="label">Longitud de onda</div></div>
+            `;
+            renderChart(data.trace, data.events);
+            renderEventsTable(data.events);
+
+            const m = data.metadata;
+            const metaItems = [
+                ['Cable ID', m.cable_id], ['Fibra ID', m.fiber_id],
+                ['Ubicacion A', m.location_a], ['Ubicacion B', m.location_b],
+                ['Tipo de fibra', m.fiber_type], ['Condicion', m.build_condition],
+                ['Operador', m.operator], ['Fabricante OTDR', m.otdr_manufacturer],
+                ['Modelo OTDR', m.otdr_model], ['Serie OTDR', m.otdr_serial],
+                ['Modulo', m.module], ['Serie Modulo', m.module_serial],
+                ['Software', m.software_version], ['Ancho de pulso', m.pulse_width_ns],
+                ['Rango (km)', m.range_km], ['Indice de refraccion', m.index_of_refraction],
+                ['Fecha/Hora', m.date_time],
+            ];
+            document.getElementById('metaGrid').innerHTML = metaItems.map(([k, v]) =>
+                `<div class="meta-item"><span class="key">${k}</span><span class="val">${v || 'N/A'}</span></div>`
+            ).join('');
+        }
+
+        function getThresholdForEvent(eventType) {
+            if (eventType.includes('Conector')) return thresholds.connector;
+            if (eventType.includes('Empalme')) return thresholds.splice;
+            return null;
+        }
+
+        function renderEventsTable(events) {
+            document.getElementById('eventsBody').innerHTML = events.map(evt => {
+                const thr = getThresholdForEvent(evt.event_type);
+                const loss = Math.abs(evt.splice_loss_db);
+                const exceeded = thr !== null && loss > thr;
+                const thrDisplay = thr !== null ? thr.toFixed(2) : '--';
+                const statusDisplay = thr !== null
+                    ? (exceeded ? '<span style="color:#fbbf24;font-weight:700;">EXCEDE</span>' : '<span style="color:#34d399;">OK</span>')
+                    : '--';
+                const lossClass = exceeded ? 'loss-exceeded' : getLossClass(evt.splice_loss_db);
+                return `<tr>
+                    <td>${evt.number}</td>
+                    <td><span class="event-badge ${getBadgeClass(evt.event_type)}">${evt.event_type}</span></td>
+                    <td>${evt.distance_km}</td>
+                    <td><span class="${lossClass}">${evt.splice_loss_db}</span></td>
+                    <td>${thrDisplay}</td><td>${statusDisplay}</td>
+                    <td>${evt.reflection_db}</td><td>${evt.slope_db_km}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        function applyThresholds() {
+            thresholds.connector = parseFloat(document.getElementById('thrConnector').value) || 0.5;
+            thresholds.splice = parseFloat(document.getElementById('thrSplice').value) || 0.25;
+            if (currentData) renderEventsTable(currentData.events);
+        }
+
+        // ===================== CHART =====================
+        function renderChart(trace, events) {
+            const ctx = document.getElementById('traceChart').getContext('2d');
+            if (traceChart) traceChart.destroy();
+
+            const annotations = {};
+            events.forEach((evt, i) => {
+                annotations['event' + i] = {
+                    type: 'line', scaleID: 'x',
+                    value: evt.distance_km,
+                    borderColor: getEventColor(evt.event_type),
+                    borderWidth: 1.5, borderDash: [4, 4],
+                    label: {
+                        display: true, content: `E${evt.number}`,
+                        position: 'start',
+                        backgroundColor: getEventColor(evt.event_type),
+                        color: '#fff', font: { size: 10, weight: 'bold' },
+                        padding: 3, borderRadius: 3,
+                    }
+                };
+            });
+
+            // Build {x, y} dataset
+            const hasTrace = trace.distances_km.length > 0;
+            const chartData = hasTrace
+                ? trace.distances_km.map((d, i) => ({ x: d, y: trace.power_db[i] }))
+                : events.map(e => ({ x: e.distance_km, y: -e.splice_loss_db }));
+
+            traceChart = new Chart(ctx, {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: 'Potencia (dB)',
+                        data: chartData,
+                        borderColor: '#60a5fa',
+                        backgroundColor: 'rgba(96, 165, 250, 0.1)',
+                        borderWidth: 1.5,
+                        pointRadius: 0,
+                        showLine: true,
+                        fill: true,
+                        tension: 0,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'nearest', intersect: false },
+                    scales: {
+                        x: {
+                            type: 'linear',
+                            title: { display: true, text: 'Distancia (km)', color: '#7b8ba8' },
+                            ticks: { color: '#5a6f8a', maxTicksLimit: 20 },
+                            grid: { color: 'rgba(30, 58, 95, 0.3)' },
+                        },
+                        y: {
+                            type: 'linear',
+                            title: { display: true, text: 'Potencia (dB)', color: '#7b8ba8' },
+                            ticks: { color: '#5a6f8a' },
+                            grid: { color: 'rgba(30, 58, 95, 0.3)' },
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        annotation: { annotations },
+                        tooltip: {
+                            backgroundColor: 'rgba(13, 21, 37, 0.95)',
+                            borderColor: '#1e3a5f', borderWidth: 1,
+                            titleColor: '#60a5fa', bodyColor: '#c8d6e8',
+                            callbacks: {
+                                title: (items) => items[0] ? `Distancia: ${items[0].parsed.x.toFixed(3)} km` : '',
+                                label: (item) => `Potencia: ${item.parsed.y.toFixed(3)} dB`,
+                            }
+                        },
+                        zoom: {
+                            pan: {
+                                enabled: true,
+                                mode: 'x',
+                                modifierKey: 'shift',
+                            },
+                            zoom: {
+                                wheel: { enabled: true, speed: 0.1 },
+                                pinch: { enabled: true },
+                                mode: 'x',
+                            },
+                        }
+                    },
+                    onClick: handleChartClick,
+                }
+            });
+
+            // Double click to reset zoom
+            traceChart.canvas.ondblclick = function() {
+                traceChart.resetZoom();
+            };
+        }
+
+        // ===================== A/B LINES =====================
+        function handleChartClick(event) {
+            if (!currentData || !traceChart) return;
+            // Only handle if user is in A/B placement mode
+            // We detect this by checking if either input is focused
+            const lineAInput = document.getElementById('lineA');
+            const lineBInput = document.getElementById('lineB');
+
+            if (document.activeElement === lineAInput || document.activeElement === lineBInput) {
+                const canvasPos = Chart.helpers.getRelativePosition(event, traceChart);
+                const xValue = traceChart.scales.x.getValueForPixel(canvasPos.x);
+                if (xValue !== undefined) {
+                    document.activeElement.value = xValue.toFixed(3);
+                    // Auto-apply if both have values
+                    if (lineAInput.value && lineBInput.value) {
+                        applyABLines();
+                    }
+                }
+            }
+        }
+
+        function applyABLines() {
+            if (!currentData || !currentData.trace.distances_km.length) return;
+
+            const aVal = parseFloat(document.getElementById('lineA').value);
+            const bVal = parseFloat(document.getElementById('lineB').value);
+
+            if (isNaN(aVal) || isNaN(bVal)) {
+                showError('Ingresa valores validos para las lineas A y B.');
+                setTimeout(hideError, 3000);
+                return;
+            }
+
+            abLineA = aVal;
+            abLineB = bVal;
+            updateABCalculation();
+            updateABAnnotations();
+            setupDragListeners();
+            setupHoverCursor();
+        }
+
+        function updateABCalculation() {
+            if (abLineA === null || abLineB === null) return;
+            const trace = currentData.trace;
+            const idxA = findClosestIndex(trace.distances_km, abLineA);
+            const idxB = findClosestIndex(trace.distances_km, abLineB);
+            const powerA = trace.power_db[idxA];
+            const powerB = trace.power_db[idxB];
+            const loss = Math.abs(powerA - powerB);
+            const distAB = Math.abs(abLineB - abLineA);
+            const slope = distAB > 0 ? (loss / distAB) : 0;
+
+            document.getElementById('abResult').style.display = '';
+            document.getElementById('abLossValue').textContent = loss.toFixed(3) + ' dB';
+            document.getElementById('abDistance').style.display = '';
+            document.getElementById('abDistValue').textContent = distAB.toFixed(3) + ' km';
+            document.getElementById('abSlope').style.display = '';
+            document.getElementById('abSlopeValue').textContent = slope.toFixed(3) + ' dB/km';
+        }
+
+        function updateABAnnotations() {
+            if (!traceChart) return;
+            const annotations = traceChart.options.plugins.annotation.annotations;
+
+            annotations.lineA = {
+                type: 'line', scaleID: 'x',
+                value: abLineA,
+                borderColor: '#f59e0b', borderWidth: 2.5, borderDash: [6, 3],
+                label: {
+                    display: true, content: `A: ${abLineA.toFixed(3)} km`,
+                    position: 'end', backgroundColor: '#f59e0b', color: '#000',
+                    font: { size: 11, weight: 'bold' }, padding: 4, borderRadius: 3,
+                }
+            };
+            annotations.lineB = {
+                type: 'line', scaleID: 'x',
+                value: abLineB,
+                borderColor: '#a855f7', borderWidth: 2.5, borderDash: [6, 3],
+                label: {
+                    display: true, content: `B: ${abLineB.toFixed(3)} km`,
+                    position: 'end', backgroundColor: '#a855f7', color: '#fff',
+                    font: { size: 11, weight: 'bold' }, padding: 4, borderRadius: 3,
+                }
+            };
+            const minAB = Math.min(abLineA, abLineB);
+            const maxAB = Math.max(abLineA, abLineB);
+            annotations.abRegion = {
+                type: 'box',
+                xMin: minAB, xMax: maxAB,
+                backgroundColor: 'rgba(168, 85, 247, 0.08)',
+                borderWidth: 0,
+            };
+            traceChart.update('none');
+        }
+
+        // ===================== MANUAL DRAG FOR A/B LINES =====================
+        let dragTarget = null; // 'A' or 'B' or null
+        let isDragging = false;
+
+        function getXValueFromPixel(chart, pixelX) {
+            const xScale = chart.scales.x;
+            return xScale.getValueForPixel(pixelX);
+        }
+
+        function getPixelXFromValue(chart, value) {
+            const xScale = chart.scales.x;
+            return xScale.getPixelForValue(value);
+        }
+
+        let dragListenersAttached = false;
+        function setupDragListeners() {
+            if (!traceChart || dragListenersAttached) return;
+            dragListenersAttached = true;
+            const canvas = traceChart.canvas;
+
+            canvas.addEventListener('mousedown', onDragStart, true);
+            document.addEventListener('mousemove', onDragMove, true);
+            document.addEventListener('mouseup', onDragStop, true);
+
+            // Touch support
+            canvas.addEventListener('touchstart', (e) => {
+                if (e.touches.length !== 1) return;
+                const touch = e.touches[0];
+                onDragStart(touch);
+                if (isDragging) e.preventDefault();
+            }, { passive: false });
+            document.addEventListener('touchmove', (e) => {
+                if (!isDragging || e.touches.length !== 1) return;
+                e.preventDefault();
+                onDragMove(e.touches[0]);
+            }, { passive: false });
+            document.addEventListener('touchend', onDragStop);
+        }
+
+        function getMouseX(e) {
+            const rect = traceChart.canvas.getBoundingClientRect();
+            return e.clientX - rect.left;
+        }
+
+        function onDragStart(e) {
+            if (!traceChart || abLineA === null || abLineB === null) return;
+            const mouseX = getMouseX(e);
+            const chartArea = traceChart.chartArea;
+            if (mouseX < chartArea.left - 15 || mouseX > chartArea.right + 15) return;
+
+            const pixelA = getPixelXFromValue(traceChart, abLineA);
+            const pixelB = getPixelXFromValue(traceChart, abLineB);
+            const threshold = 15; // px tolerance for grabbing
+
+            const distA = Math.abs(mouseX - pixelA);
+            const distB = Math.abs(mouseX - pixelB);
+
+            if (distA < threshold && distA <= distB) {
+                dragTarget = 'A';
+                isDragging = true;
+                traceChart.options.plugins.zoom.pan.enabled = false;
+                traceChart.options.plugins.zoom.zoom.wheel.enabled = false;
+                traceChart.canvas.style.cursor = 'col-resize';
+                if (e.preventDefault) e.preventDefault();
+                if (e.stopPropagation) e.stopPropagation();
+            } else if (distB < threshold) {
+                dragTarget = 'B';
+                isDragging = true;
+                traceChart.options.plugins.zoom.pan.enabled = false;
+                traceChart.options.plugins.zoom.zoom.wheel.enabled = false;
+                traceChart.canvas.style.cursor = 'col-resize';
+                if (e.preventDefault) e.preventDefault();
+                if (e.stopPropagation) e.stopPropagation();
+            }
+        }
+
+        function onDragMove(e) {
+            if (!isDragging || !dragTarget || !traceChart) return;
+            if (e.preventDefault) e.preventDefault();
+
+            const mouseX = getMouseX(e);
+            const chartArea = traceChart.chartArea;
+            const clampedX = Math.max(chartArea.left, Math.min(chartArea.right, mouseX));
+            const newValue = getXValueFromPixel(traceChart, clampedX);
+
+            const annotations = traceChart.options.plugins.annotation.annotations;
+
+            if (dragTarget === 'A') {
+                abLineA = newValue;
+                annotations.lineA.value = newValue;
+                annotations.lineA.label.content = `A: ${newValue.toFixed(3)} km`;
+                document.getElementById('lineA').value = newValue.toFixed(3);
+            } else {
+                abLineB = newValue;
+                annotations.lineB.value = newValue;
+                annotations.lineB.label.content = `B: ${newValue.toFixed(3)} km`;
+                document.getElementById('lineB').value = newValue.toFixed(3);
+            }
+
+            // Update shaded region
+            const minAB = Math.min(abLineA, abLineB);
+            const maxAB = Math.max(abLineA, abLineB);
+            annotations.abRegion.xMin = minAB;
+            annotations.abRegion.xMax = maxAB;
+
+            traceChart.update('none');
+        }
+
+        function onDragStop() {
+            if (isDragging) {
+                isDragging = false;
+                dragTarget = null;
+                if (traceChart) {
+                    traceChart.options.plugins.zoom.pan.enabled = true;
+                    traceChart.options.plugins.zoom.zoom.wheel.enabled = true;
+                    traceChart.canvas.style.cursor = '';
+                    updateABCalculation();
+                }
+            }
+        }
+
+        // Show col-resize cursor when hovering near A/B lines
+        let hoverCursorAttached = false;
+        function setupHoverCursor() {
+            if (!traceChart || hoverCursorAttached) return;
+            hoverCursorAttached = true;
+            traceChart.canvas.addEventListener('mousemove', function(e) {
+                if (isDragging || abLineA === null || abLineB === null) return;
+                const mouseX = getMouseX(e);
+                const pixelA = getPixelXFromValue(traceChart, abLineA);
+                const pixelB = getPixelXFromValue(traceChart, abLineB);
+                const threshold = 15;
+                if (Math.abs(mouseX - pixelA) < threshold || Math.abs(mouseX - pixelB) < threshold) {
+                    traceChart.canvas.style.cursor = 'col-resize';
+                } else {
+                    traceChart.canvas.style.cursor = '';
+                }
+            });
+        }
+
+        function clearABLines() {
+            abLineA = null; abLineB = null;
+            document.getElementById('lineA').value = '';
+            document.getElementById('lineB').value = '';
+            document.getElementById('abResult').style.display = 'none';
+            document.getElementById('abDistance').style.display = 'none';
+            document.getElementById('abSlope').style.display = 'none';
+            if (traceChart) {
+                const ann = traceChart.options.plugins.annotation.annotations;
+                delete ann.lineA; delete ann.lineB; delete ann.abRegion;
+                traceChart.update('none');
+            }
+        }
+
+        function findClosestIndex(arr, val) {
+            let closest = 0, minDiff = Math.abs(arr[0] - val);
+            for (let i = 1; i < arr.length; i++) {
+                const diff = Math.abs(arr[i] - val);
+                if (diff < minDiff) { minDiff = diff; closest = i; }
+            }
+            return closest;
+        }
+
+        // ===================== PDF =====================
+        async function exportPDF() {
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const pageW = 210, margin = 15, contentW = pageW - margin * 2;
+            let y = margin;
+            const filename = currentData._filename || 'analisis.sor';
+
+            // Logo
+            if (logoBase64) {
+                try { pdf.addImage(logoBase64, 'PNG', margin, y, 40, 24); } catch(e) {}
+            }
+
+            // Title next to logo
+            pdf.setFontSize(16);
+            pdf.setTextColor(33, 58, 165); // Flo Networks blue
+            pdf.text('Reporte OTDR', margin + 46, y + 8);
+            pdf.setFontSize(9);
+            pdf.setTextColor(100);
+            pdf.text('Archivo: ' + filename, margin + 46, y + 14);
+            pdf.text('Fecha: ' + new Date().toLocaleDateString('es-MX'), margin + 46, y + 19);
+            y += 28;
+
+            pdf.setDrawColor(33, 58, 165);
+            pdf.setLineWidth(0.5);
+            pdf.line(margin, y, pageW - margin, y);
+            y += 8;
+
+            // Summary
+            pdf.setFontSize(12);
+            pdf.setTextColor(33, 58, 165);
+            pdf.text('Resumen del Enlace', margin, y);
+            y += 6;
+
+            const s = currentData.summary, m = currentData.metadata;
+            pdf.setFontSize(9);
+            pdf.setTextColor(60);
+            const summaryRows = [
+                ['Eventos', '' + s.num_events, 'Longitud fibra', s.fiber_length_km + ' km'],
+                ['Perdida total', s.total_loss_db + ' dB', 'ORL', s.orl_db + ' dB'],
+                ['Longitud de onda', '' + m.wavelength_nm, 'Indice refraccion', '' + m.index_of_refraction],
+                ['Cable ID', m.cable_id, 'Fibra ID', m.fiber_id],
+                ['OTDR', m.otdr_manufacturer + ' ' + m.otdr_model, 'S/N', m.otdr_serial],
+                ['Rango', m.range_km + ' km', 'Ancho pulso', '' + m.pulse_width_ns],
+                ['Fecha medicion', '' + m.date_time, '', ''],
+            ];
+            summaryRows.forEach(row => {
+                pdf.setFont(undefined, 'bold'); pdf.text(row[0] + ':', margin, y);
+                pdf.setFont(undefined, 'normal'); pdf.text('' + row[1], margin + 35, y);
+                if (row[2]) {
+                    pdf.setFont(undefined, 'bold'); pdf.text(row[2] + ':', margin + 95, y);
+                    pdf.setFont(undefined, 'normal'); pdf.text('' + row[3], margin + 130, y);
+                }
+                y += 5;
+            });
+            y += 5;
+
+            // Chart
+            pdf.setFontSize(12);
+            pdf.setTextColor(33, 58, 165);
+            pdf.text('Trazo OTDR', margin, y);
+            y += 5;
+            try {
+                const chartCanvas = document.getElementById('traceChart');
+                const chartImg = chartCanvas.toDataURL('image/png', 1.0);
+                const chartH = (contentW * chartCanvas.height) / chartCanvas.width;
+                pdf.addImage(chartImg, 'PNG', margin, y, contentW, chartH);
+                y += chartH + 3;
+            } catch (e) {
+                pdf.setFontSize(9); pdf.text('(No se pudo capturar el grafico)', margin, y); y += 8;
+            }
+
+            // A-B
+            if (abLineA !== null && abLineB !== null) {
+                const abLoss = document.getElementById('abLossValue').textContent;
+                const abDist = document.getElementById('abDistValue').textContent;
+                const abSl = document.getElementById('abSlopeValue').textContent;
+                pdf.setFontSize(9);
+                pdf.setTextColor(100, 50, 200);
+                pdf.text(`Linea A: ${abLineA.toFixed(3)} km | Linea B: ${abLineB.toFixed(3)} km | Perdida: ${abLoss} | Distancia: ${abDist} | Pendiente: ${abSl}`, margin, y);
+                y += 7;
+            }
+
+            // Events table
+            if (y > 220) { pdf.addPage(); y = margin; }
+            pdf.setFontSize(12);
+            pdf.setTextColor(33, 58, 165);
+            pdf.text('Tabla de Eventos', margin, y);
+            y += 3;
+            pdf.setFontSize(7);
+            pdf.text(`Umbral Conector: ${thresholds.connector} dB  |  Umbral Empalme: ${thresholds.splice} dB`, margin, y + 4);
+            y += 8;
+
+            const colX = [margin, margin+10, margin+50, margin+85, margin+110, margin+130, margin+150, margin+170];
+            const headers = ['#', 'Tipo', 'Dist (km)', 'Perdida (dB)', 'Umbral (dB)', 'Estado', 'Refl (dB)', 'Pend (dB/km)'];
+
+            pdf.setFillColor(33, 58, 165);
+            pdf.rect(margin, y - 3, contentW, 6, 'F');
+            pdf.setTextColor(255);
+            pdf.setFont(undefined, 'bold');
+            pdf.setFontSize(7);
+            headers.forEach((h, i) => pdf.text(h, colX[i], y));
+            y += 5;
+            pdf.setFont(undefined, 'normal');
+            pdf.setFontSize(7.5);
+
+            currentData.events.forEach(evt => {
+                if (y > 280) { pdf.addPage(); y = margin; }
+                const thr = getThresholdForEvent(evt.event_type);
+                const loss = Math.abs(evt.splice_loss_db);
+                const exceeded = thr !== null && loss > thr;
+
+                if (exceeded) { pdf.setFillColor(255, 250, 205); pdf.rect(margin, y - 3.5, contentW, 5, 'F'); }
+
+                pdf.setTextColor(60);
+                pdf.text('' + evt.number, colX[0], y);
+                pdf.text(evt.event_type, colX[1], y);
+                pdf.text('' + evt.distance_km, colX[2], y);
+                if (exceeded) { pdf.setTextColor(200, 150, 0); pdf.setFont(undefined, 'bold'); }
+                pdf.text('' + evt.splice_loss_db, colX[3], y);
+                pdf.setFont(undefined, 'normal'); pdf.setTextColor(60);
+                pdf.text(thr !== null ? thr.toFixed(2) : '--', colX[4], y);
+                if (thr !== null) {
+                    if (exceeded) { pdf.setTextColor(200, 150, 0); pdf.text('EXCEDE', colX[5], y); }
+                    else { pdf.setTextColor(0, 150, 80); pdf.text('OK', colX[5], y); }
+                    pdf.setTextColor(60);
+                } else { pdf.text('--', colX[5], y); }
+                pdf.text('' + evt.reflection_db, colX[6], y);
+                pdf.text('' + evt.slope_db_km, colX[7], y);
+                y += 5;
+            });
+
+            // Footer on every page
+            const totalPages = pdf.internal.getNumberOfPages();
+            for (let p = 1; p <= totalPages; p++) {
+                pdf.setPage(p);
+                pdf.setFontSize(7); pdf.setTextColor(150);
+                pdf.text('Flo Networks - Analizador OTDR', margin, 290);
+                pdf.text(`Pagina ${p}/${totalPages}`, pageW - margin - 20, 290);
+            }
+
+            pdf.save('reporte_otdr_' + filename.replace('.sor', '') + '.pdf');
+        }
+
+        // ===================== UTILS =====================
+        function getEventColor(type) {
+            if (type.includes('Conector')) return '#60a5fa';
+            if (type.includes('Empalme')) return '#34d399';
+            if (type.includes('Fin')) return '#f87171';
+            if (type.includes('saturado') || type.includes('Reflexion')) return '#fbbf24';
+            return '#94a3b8';
+        }
+        function getBadgeClass(type) {
+            if (type.includes('Conector')) return 'badge-connector';
+            if (type.includes('Empalme')) return 'badge-splice';
+            if (type.includes('Fin')) return 'badge-end';
+            if (type.includes('saturado') || type.includes('Reflexion')) return 'badge-reflection';
+            return 'badge-default';
+        }
+        function getLossClass(val) {
+            if (val < 0) return 'loss-negative';
+            if (val > 0) return 'loss-positive';
+            return 'loss-zero';
+        }
+        function showError(msg) { const el = document.getElementById('errorMsg'); el.textContent = msg; el.classList.add('active'); }
+        function hideError() { document.getElementById('errorMsg').classList.remove('active'); }
+        // ===================== GOOGLE DRIVE =====================
+        async function loadFromDrive() {
+            const url = document.getElementById('driveUrl').value.trim();
+            if (!url) {
+                showError('Pega un link de Google Drive valido.');
+                setTimeout(hideError, 3000);
+                return;
+            }
+            if (!url.includes('drive.google.com')) {
+                showError('El link debe ser de Google Drive.');
+                setTimeout(hideError, 3000);
+                return;
+            }
+
+            hideError();
+            document.getElementById('uploadArea').style.display = 'none';
+            document.getElementById('loading').classList.add('active');
+
+            try {
+                const response = await fetch('/api/analyze-drive', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url }),
+                });
+                const data = await response.json();
+                if (data.error) {
+                    showError(data.error);
+                    document.getElementById('uploadArea').style.display = '';
+                    document.getElementById('loading').classList.remove('active');
+                    return;
+                }
+                currentData = data;
+                currentData._filename = 'drive_file.sor';
+                renderResults(data);
+            } catch (err) {
+                showError('Error de conexion: ' + err.message);
+                document.getElementById('uploadArea').style.display = '';
+            } finally {
+                document.getElementById('loading').classList.remove('active');
+            }
+        }
+
+        function resetApp() {
+            document.getElementById('results').classList.remove('active');
+            document.getElementById('uploadArea').style.display = '';
+            fileInput.value = '';
+            document.getElementById('driveUrl').value = '';
+            currentData = null; abLineA = null; abLineB = null; hideError();
+        }
+    </script>
+</body>
+</html>
