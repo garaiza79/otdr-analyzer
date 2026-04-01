@@ -1,11 +1,34 @@
 """OTDR .sor file analyzer - Flask backend."""
 import os
 import re
+import struct
 import tempfile
-import urllib.request
+from datetime import datetime, timezone
 from flask import Flask, request, jsonify, send_from_directory
 
 from pyotdr import read as pyotdr_read
+import pyotdr.parts as _pyotdr_parts
+
+# Monkey-patch pyotdr to handle latin-1 encoded strings in .sor files.
+# Some OTDR vendors (e.g., EXFO) store location names with accented
+# characters (latin-1), but pyotdr hardcodes utf-8 decoding.
+_original_get_string = _pyotdr_parts.get_string
+
+
+def _get_string_latin1(fh):
+    import struct
+    mystr = b""
+    byte = fh.read(1)
+    while byte != "" and byte != b"":
+        tt = struct.unpack("c", byte)[0]
+        if tt == b"\x00":
+            break
+        mystr += tt
+        byte = fh.read(1)
+    return mystr.decode("latin-1")
+
+
+_pyotdr_parts.get_string = _get_string_latin1
 
 app = Flask(__name__, static_folder="static")
 app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024  # 16 MB max
@@ -40,6 +63,9 @@ def parse_sor_file(filepath):
     else:
         range_km = 0
 
+    # Extract calibration date from ExfoAdditionalInfo block
+    calibration_date = extract_calibration_date(filepath)
+
     metadata = {
         "cable_id": gen_params.get("cable ID", "N/A"),
         "fiber_id": gen_params.get("fiber ID", "N/A"),
@@ -59,6 +85,7 @@ def parse_sor_file(filepath):
         "range_km": range_km,
         "index_of_refraction": fxd_params.get("index", "N/A"),
         "date_time": fxd_params.get("date/time", "N/A"),
+        "calibration_date": calibration_date,
     }
 
     # Extract events - pyotdr uses "event 1", "event 2", etc. keys
@@ -108,6 +135,42 @@ def parse_sor_file(filepath):
         "summary": summary,
         "trace": trace,
     }
+
+
+def extract_calibration_date(filepath):
+    """Extract calibration date from ExfoAdditionalInfo block in .sor file.
+
+    EXFO OTDRs store a unix timestamp (midnight UTC) in the
+    ExfoAdditionalInfo block that corresponds to the module
+    calibration date.
+    """
+    try:
+        with open(filepath, "rb") as f:
+            raw = f.read()
+
+        # Search for the ExfoAdditionalInfo block data (not the map entry)
+        # The block name appears twice: once in the map block (early in file)
+        # and once at the actual block position. We need the last occurrence.
+        marker = b"ExfoAdditionalInfo\x00"
+        pos = raw.rfind(marker)
+        if pos == -1:
+            return "N/A"
+
+        # After the null-terminated name, the next 4 bytes are a uint32 LE timestamp
+        data_start = pos + len(marker)
+        if data_start + 4 > len(raw):
+            return "N/A"
+
+        ts = struct.unpack_from("<I", raw, data_start)[0]
+
+        # Validate: should be a reasonable date (2010-2040)
+        if ts < 1262304000 or ts > 2208988800:  # 2010 to 2040
+            return "N/A"
+
+        dt = datetime.fromtimestamp(ts, tz=timezone.utc)
+        return dt.strftime("%Y-%m-%d")
+    except Exception:
+        return "N/A"
 
 
 def classify_event(type_code, event_num, total_events):
@@ -210,6 +273,41 @@ def extract_drive_file_id(url):
     return None
 
 
+def download_google_drive_file(file_id, dest_path):
+    """Download a file from Google Drive using gdown."""
+    import gdown
+
+    url = f"https://drive.google.com/uc?id={file_id}"
+    try:
+        output = gdown.download(url, dest_path, quiet=True, fuzzy=True)
+    except Exception:
+        output = None
+
+    if not output or not os.path.exists(dest_path):
+        raise ValueError(
+            "No se pudo descargar el archivo de Google Drive. "
+            "Verifica que el archivo este compartido como "
+            "'Cualquier persona con el enlace'."
+        )
+
+    # Verify we didn't get an HTML page
+    file_size = os.path.getsize(dest_path)
+    if file_size < 100:
+        raise ValueError(
+            f"El archivo descargado es muy pequeno ({file_size} bytes). "
+            "Verifica el enlace."
+        )
+
+    with open(dest_path, "rb") as f:
+        header = f.read(15)
+    if header.startswith(b"<!doctype") or header.startswith(b"<html"):
+        raise ValueError(
+            "Google Drive devolvio una pagina HTML en vez del archivo. "
+            "Verifica que el archivo este compartido como "
+            "'Cualquier persona con el enlace'."
+        )
+
+
 @app.route("/api/analyze-drive", methods=["POST"])
 def analyze_drive():
     data = request.get_json()
@@ -221,15 +319,14 @@ def analyze_drive():
     if not file_id:
         return jsonify({"error": "No se pudo extraer el ID del archivo de Google Drive"}), 400
 
-    download_url = f"https://drive.google.com/uc?export=download&id={file_id}"
-
+    tmp_path = None
     try:
         with tempfile.NamedTemporaryFile(delete=False, suffix=".sor") as tmp:
             tmp_path = tmp.name
-            req = urllib.request.Request(download_url, headers={"User-Agent": "Mozilla/5.0"})
-            with urllib.request.urlopen(req, timeout=30) as resp:
-                tmp.write(resp.read())
+        download_google_drive_file(file_id, tmp_path)
     except Exception as e:
+        if tmp_path and os.path.exists(tmp_path):
+            os.unlink(tmp_path)
         return jsonify({"error": f"Error descargando archivo de Drive: {str(e)}"}), 500
 
     try:
@@ -239,7 +336,8 @@ def analyze_drive():
     except Exception as e:
         return jsonify({"error": f"Error al analizar el archivo: {str(e)}"}), 500
     finally:
-        os.unlink(tmp_path)
+        if tmp_path and os.path.exists(tmp_path):
+            os.unlink(tmp_path)
 
 
 if __name__ == "__main__":

@@ -271,6 +271,7 @@
                 <input type="text" id="driveUrl" placeholder="Pega un link de Google Drive (https://drive.google.com/file/d/...)">
                 <button class="btn-drive" onclick="loadFromDrive()">Cargar desde Drive</button>
             </div>
+            <p style="color: #93a8c4; font-size: 0.9rem; margin-top: 10px; text-align: center;">Google Drive: Para que funcione la descarga, el archivo debe estar compartido como <strong style="color: #c8d6e8;">"Cualquier persona con el enlace"</strong></p>
         </div>
 
         <div class="loading" id="loading">
@@ -472,7 +473,7 @@
                 ['Modulo', m.module], ['Serie Modulo', m.module_serial],
                 ['Software', m.software_version], ['Ancho de pulso', m.pulse_width_ns],
                 ['Rango (km)', m.range_km], ['Indice de refraccion', m.index_of_refraction],
-                ['Fecha/Hora', m.date_time],
+                ['Fecha/Hora', m.date_time], ['Fecha calibracion', m.calibration_date || 'N/A'],
             ];
             document.getElementById('metaGrid').innerHTML = metaItems.map(([k, v]) =>
                 `<div class="meta-item"><span class="key">${k}</span><span class="val">${v || 'N/A'}</span></div>`
@@ -910,7 +911,8 @@
                 ['Cable ID', m.cable_id, 'Fibra ID', m.fiber_id],
                 ['OTDR', m.otdr_manufacturer + ' ' + m.otdr_model, 'S/N', m.otdr_serial],
                 ['Rango', m.range_km + ' km', 'Ancho pulso', '' + m.pulse_width_ns],
-                ['Fecha medicion', '' + m.date_time, '', ''],
+                ['Modulo', m.module, 'S/N Modulo', m.module_serial],
+                ['Fecha medicion', '' + m.date_time, 'Calibracion', m.calibration_date || 'N/A'],
             ];
             summaryRows.forEach(row => {
                 pdf.setFont(undefined, 'bold'); pdf.text(row[0] + ':', margin, y);
