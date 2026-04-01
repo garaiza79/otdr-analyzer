@@ -31,7 +31,21 @@ def _get_string_latin1(fh):
 _pyotdr_parts.get_string = _get_string_latin1
 
 app = Flask(__name__, static_folder="static")
-app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024  # 16 MB max
+app.config["MAX_CONTENT_LENGTH"] = 64 * 1024 * 1024  # 64 MB max (multiple files)
+
+# In-memory session storage for uploaded multi-file batches
+# Key: session_id, Value: { "files": { filename: filepath }, "created": timestamp }
+_upload_sessions = {}
+
+
+@app.errorhandler(413)
+def request_entity_too_large(error):
+    return jsonify({"error": "Los archivos exceden el tamano maximo permitido (64 MB)."}), 413
+
+
+@app.errorhandler(500)
+def internal_server_error(error):
+    return jsonify({"error": "Error interno del servidor."}), 500
 
 
 def parse_sor_file(filepath):
@@ -257,6 +271,84 @@ def analyze():
         return jsonify({"error": f"Error al analizar el archivo: {str(e)}"}), 500
     finally:
         os.unlink(tmp_path)
+
+
+@app.route("/api/upload-multi", methods=["POST"])
+def upload_multi():
+    """Upload multiple .sor files and return a session with file list."""
+    import uuid
+    import time
+
+    files = request.files.getlist("files")
+    if not files:
+        return jsonify({"error": "No se proporcionaron archivos"}), 400
+
+    # Filter only .sor files
+    sor_files = [f for f in files if f.filename.lower().endswith(".sor")]
+    if not sor_files:
+        return jsonify({"error": "No se encontraron archivos .sor"}), 400
+
+    # Create temp directory for this session
+    session_id = str(uuid.uuid4())
+    session_dir = os.path.join(tempfile.gettempdir(), f"otdr_{session_id}")
+    os.makedirs(session_dir, exist_ok=True)
+
+    file_map = {}
+    for f in sor_files:
+        # Use only the basename (browsers send relative paths for folder uploads)
+        safe_name = os.path.basename(f.filename)
+        dest = os.path.join(session_dir, safe_name)
+        counter = 1
+        while dest in file_map.values():
+            name, ext = os.path.splitext(safe_name)
+            safe_name = f"{name}_{counter}{ext}"
+            dest = os.path.join(session_dir, safe_name)
+            counter += 1
+        f.save(dest)
+        file_map[safe_name] = dest
+
+    _upload_sessions[session_id] = {
+        "files": file_map,
+        "created": time.time(),
+    }
+
+    # Clean old sessions (older than 1 hour)
+    cutoff = time.time() - 3600
+    for sid in list(_upload_sessions.keys()):
+        if _upload_sessions[sid]["created"] < cutoff:
+            _cleanup_session(sid)
+
+    return jsonify({
+        "session_id": session_id,
+        "files": sorted(file_map.keys()),
+    })
+
+
+@app.route("/api/analyze-session/<session_id>/<filename>")
+def analyze_session_file(session_id, filename):
+    """Analyze a specific file from an uploaded multi-file session."""
+    session = _upload_sessions.get(session_id)
+    if not session:
+        return jsonify({"error": "Sesion no encontrada o expirada"}), 404
+
+    filepath = session["files"].get(filename)
+    if not filepath or not os.path.exists(filepath):
+        return jsonify({"error": f"Archivo '{filename}' no encontrado"}), 404
+
+    try:
+        result = parse_sor_file(filepath)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": f"Error al analizar '{filename}': {str(e)}"}), 500
+
+
+def _cleanup_session(session_id):
+    """Remove a session and its temp files."""
+    import shutil
+    session = _upload_sessions.pop(session_id, None)
+    if session:
+        session_dir = os.path.dirname(list(session["files"].values())[0])
+        shutil.rmtree(session_dir, ignore_errors=True)
 
 
 def extract_drive_file_id(url):

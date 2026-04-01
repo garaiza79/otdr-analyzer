@@ -103,7 +103,50 @@
         @keyframes spin { to { transform: rotate(360deg); } }
 
         .results { display: none; }
-        .results.active { display: block; }
+        .results.active { display: flex; gap: 0; }
+
+        /* Sidebar */
+        .sidebar {
+            width: 280px; min-width: 280px; max-height: calc(100vh - 130px);
+            background: rgba(16, 28, 50, 0.6); border: 1px solid #1e3a5f;
+            border-radius: 12px; padding: 0; margin-right: 20px;
+            position: sticky; top: 90px; overflow: hidden;
+            display: flex; flex-direction: column;
+        }
+        .sidebar-header {
+            padding: 16px 18px; border-bottom: 1px solid #1e3a5f;
+            font-size: 0.95rem; color: #60a5fa; font-weight: 600;
+            display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+        }
+        .sidebar-header svg { width: 18px; height: 18px; flex-shrink: 0; }
+        .sidebar-list {
+            list-style: none; overflow-y: auto; flex: 1; padding: 6px 0;
+        }
+        .sidebar-list li {
+            padding: 10px 18px; cursor: pointer; font-size: 0.85rem;
+            color: #a0b4d0; transition: all 0.15s; border-left: 3px solid transparent;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .sidebar-list li:hover { background: rgba(30, 58, 95, 0.3); color: #e0e6f0; }
+        .sidebar-list li.active {
+            background: rgba(59, 130, 246, 0.15); color: #60a5fa;
+            border-left-color: #60a5fa; font-weight: 600;
+        }
+        .sidebar-list li .file-icon {
+            width: 14px; height: 14px; flex-shrink: 0; opacity: 0.6;
+        }
+        .sidebar-list li.active .file-icon { opacity: 1; }
+        .sidebar-count {
+            padding: 10px 18px; border-top: 1px solid #1e3a5f;
+            font-size: 0.75rem; color: #5a6f8a; text-align: center; flex-shrink: 0;
+        }
+
+        .main-content { flex: 1; min-width: 0; }
+
+        @media (max-width: 900px) {
+            .results.active { flex-direction: column; }
+            .sidebar { width: 100%; min-width: 100%; max-height: 200px; position: static; margin-right: 0; margin-bottom: 16px; }
+        }
 
         .section {
             background: rgba(16, 28, 50, 0.6);
@@ -262,9 +305,13 @@
                     <path d="M32 8L20 24h8v16h8V24h8L32 8z" fill="#60a5fa" opacity="0.6"/>
                     <path d="M8 44v8a4 4 0 004 4h40a4 4 0 004-4v-8" stroke="#60a5fa" stroke-width="3" stroke-linecap="round" opacity="0.4"/>
                 </svg>
-                <h2>Arrastra tu archivo .sor aqui</h2>
-                <p>o haz clic para seleccionar un archivo</p>
-                <input type="file" id="fileInput" accept=".sor">
+                <h2>Arrastra tus archivos .sor aqui</h2>
+                <p>o haz clic para seleccionar archivos</p>
+                <input type="file" id="fileInput" accept=".sor" multiple>
+            </div>
+            <input type="file" id="folderInput" webkitdirectory directory multiple style="display:none">
+            <div style="text-align:center; margin-top:10px;">
+                <button id="folderLink" style="background:none; border:none; color:#60a5fa; font-size:0.95rem; cursor:pointer; text-decoration:underline; padding:6px 12px;">Seleccionar carpeta completa</button>
             </div>
             <div class="or-divider">o</div>
             <div class="drive-input-row">
@@ -282,6 +329,18 @@
         <div class="error-msg" id="errorMsg"></div>
 
         <div class="results" id="results">
+            <!-- Sidebar with file list -->
+            <div class="sidebar" id="sidebar" style="display:none;">
+                <div class="sidebar-header">
+                    <svg viewBox="0 0 20 20" fill="#60a5fa"><path d="M2 4a2 2 0 012-2h4l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V4z"/></svg>
+                    Folder de Trazos
+                </div>
+                <ul class="sidebar-list" id="fileList"></ul>
+                <div class="sidebar-count" id="fileCount"></div>
+            </div>
+
+            <!-- Main content area -->
+            <div class="main-content">
             <div class="top-bar">
                 <button class="btn" onclick="resetApp()">Cargar otro archivo</button>
                 <button class="btn btn-pdf" onclick="exportPDF()">Exportar PDF</button>
@@ -376,6 +435,7 @@
                 </div>
                 <div class="meta-grid" id="metaGrid"></div>
             </div>
+            </div><!-- /main-content -->
         </div>
     </div>
 
@@ -387,6 +447,11 @@
         let draggingLine = null; // 'A' or 'B' or null
 
         let thresholds = { connector: 0.5, splice: 0.25 };
+
+        // Multi-file state
+        let multiSession = null; // { session_id, files: [...] }
+        let multiCache = {};     // { filename: parsedData }
+        let activeFile = null;   // currently selected filename
 
         // Logo as base64 for PDF (will be loaded dynamically)
         let logoBase64 = null;
@@ -407,21 +472,77 @@
         // Upload zone
         const uploadZone = document.getElementById('uploadZone');
         const fileInput = document.getElementById('fileInput');
+        const folderInput = document.getElementById('folderInput');
+
         uploadZone.addEventListener('click', () => fileInput.click());
+        document.getElementById('folderLink').addEventListener('click', (e) => { e.stopPropagation(); folderInput.click(); });
         uploadZone.addEventListener('dragover', (e) => { e.preventDefault(); uploadZone.classList.add('dragover'); });
         uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
         uploadZone.addEventListener('drop', (e) => {
             e.preventDefault(); uploadZone.classList.remove('dragover');
-            if (e.dataTransfer.files.length > 0) processFile(e.dataTransfer.files[0]);
+            if (e.dataTransfer.files.length > 0) processFiles(e.dataTransfer.files);
         });
         fileInput.addEventListener('change', (e) => {
-            if (e.target.files.length > 0) processFile(e.target.files[0]);
+            if (e.target.files.length > 0) processFiles(e.target.files);
+        });
+        folderInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) processFiles(e.target.files);
         });
 
-        async function processFile(file) {
-            if (!file.name.toLowerCase().endsWith('.sor')) {
-                showError('Por favor selecciona un archivo .sor valido.'); return;
+        async function processFiles(fileList) {
+            // Filter .sor files
+            const sorFiles = [];
+            for (let i = 0; i < fileList.length; i++) {
+                if (fileList[i].name.toLowerCase().endsWith('.sor')) {
+                    sorFiles.push(fileList[i]);
+                }
             }
+
+            if (sorFiles.length === 0) {
+                showError('No se encontraron archivos .sor.'); return;
+            }
+
+            // Single file: use original endpoint (backward compatible)
+            if (sorFiles.length === 1) {
+                return processSingleFile(sorFiles[0]);
+            }
+
+            // Multiple files: upload all, get session
+            hideError();
+            document.getElementById('uploadArea').style.display = 'none';
+            document.getElementById('loading').classList.add('active');
+            document.getElementById('results').classList.remove('active');
+
+            const formData = new FormData();
+            sorFiles.forEach(f => formData.append('files', f));
+
+            try {
+                const response = await fetch('/api/upload-multi', { method: 'POST', body: formData });
+                const contentType = response.headers.get('content-type') || '';
+                if (!contentType.includes('application/json')) {
+                    throw new Error(`El servidor devolvio un error (${response.status}). Verifica que los archivos no excedan 64 MB en total.`);
+                }
+                const data = await response.json();
+                if (data.error) {
+                    showError(data.error);
+                    document.getElementById('uploadArea').style.display = '';
+                    document.getElementById('loading').classList.remove('active');
+                    return;
+                }
+                multiSession = { session_id: data.session_id, files: data.files };
+                multiCache = {};
+                showSidebar(data.files);
+                // Auto-select first file
+                selectFile(data.files[0]);
+            } catch (err) {
+                showError('Error de conexion con el servidor: ' + err.message);
+                document.getElementById('uploadArea').style.display = '';
+            } finally {
+                document.getElementById('loading').classList.remove('active');
+            }
+        }
+
+        async function processSingleFile(file) {
             hideError();
             document.getElementById('uploadArea').style.display = 'none';
             document.getElementById('loading').classList.add('active');
@@ -441,6 +562,8 @@
                 }
                 currentData = data;
                 currentData._filename = file.name;
+                multiSession = null;
+                document.getElementById('sidebar').style.display = 'none';
                 renderResults(data);
             } catch (err) {
                 showError('Error de conexion con el servidor: ' + err.message);
@@ -448,6 +571,73 @@
             } finally {
                 document.getElementById('loading').classList.remove('active');
             }
+        }
+
+        // ===================== SIDEBAR =====================
+        function showSidebar(files) {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.style.display = 'flex';
+            const list = document.getElementById('fileList');
+            list.innerHTML = files.map(f => `
+                <li onclick="selectFile('${f.replace(/'/g, "\\'")}')" id="file-${cssId(f)}">
+                    <svg class="file-icon" viewBox="0 0 20 20" fill="currentColor"><path d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"/></svg>
+                    ${f}
+                </li>
+            `).join('');
+            document.getElementById('fileCount').textContent = `${files.length} archivos`;
+        }
+
+        function cssId(filename) {
+            return filename.replace(/[^a-zA-Z0-9]/g, '_');
+        }
+
+        async function selectFile(filename) {
+            if (!multiSession) return;
+            activeFile = filename;
+
+            // Highlight in sidebar
+            document.querySelectorAll('.sidebar-list li').forEach(li => li.classList.remove('active'));
+            const li = document.getElementById('file-' + cssId(filename));
+            if (li) li.classList.add('active');
+
+            // Check cache
+            if (multiCache[filename]) {
+                currentData = multiCache[filename];
+                currentData._filename = filename;
+                resetChartState();
+                renderResults(currentData);
+                document.getElementById('results').classList.add('active');
+                return;
+            }
+
+            // Fetch from server
+            document.getElementById('loading').classList.add('active');
+            try {
+                const response = await fetch(`/api/analyze-session/${multiSession.session_id}/${encodeURIComponent(filename)}`);
+                const data = await response.json();
+                if (data.error) {
+                    showError(data.error);
+                    document.getElementById('loading').classList.remove('active');
+                    return;
+                }
+                multiCache[filename] = data;
+                currentData = data;
+                currentData._filename = filename;
+                resetChartState();
+                renderResults(currentData);
+                document.getElementById('results').classList.add('active');
+            } catch (err) {
+                showError('Error cargando ' + filename + ': ' + err.message);
+            } finally {
+                document.getElementById('loading').classList.remove('active');
+            }
+        }
+
+        function resetChartState() {
+            abLineA = null; abLineB = null;
+            dragListenersAttached = false;
+            hoverCursorAttached = false;
+            if (traceChart) { traceChart.destroy(); traceChart = null; }
         }
 
         function renderResults(data) {
@@ -1079,9 +1269,14 @@
         function resetApp() {
             document.getElementById('results').classList.remove('active');
             document.getElementById('uploadArea').style.display = '';
+            document.getElementById('sidebar').style.display = 'none';
             fileInput.value = '';
+            folderInput.value = '';
             document.getElementById('driveUrl').value = '';
-            currentData = null; abLineA = null; abLineB = null; hideError();
+            currentData = null; multiSession = null; multiCache = {};
+            activeFile = null; abLineA = null; abLineB = null;
+            dragListenersAttached = false; hoverCursorAttached = false;
+            hideError();
         }
     </script>
 </body>
