@@ -294,7 +294,7 @@
         <div class="header-divider"></div>
         <div>
             <h1>Analizador OTDR</h1>
-            <p>Analisis de archivos .sor - Reflectometria de fibra optica</p>
+            <p>Analisis de archivos .sor / .trc - Reflectometria de fibra optica</p>
         </div>
     </div>
 
@@ -305,9 +305,9 @@
                     <path d="M32 8L20 24h8v16h8V24h8L32 8z" fill="#60a5fa" opacity="0.6"/>
                     <path d="M8 44v8a4 4 0 004 4h40a4 4 0 004-4v-8" stroke="#60a5fa" stroke-width="3" stroke-linecap="round" opacity="0.4"/>
                 </svg>
-                <h2>Arrastra tus archivos .sor aqui</h2>
+                <h2>Arrastra tus archivos .sor / .trc aqui</h2>
                 <p>o haz clic para seleccionar archivos</p>
-                <input type="file" id="fileInput" accept=".sor" multiple>
+                <input type="file" id="fileInput" accept=".sor,.trc" multiple>
             </div>
             <input type="file" id="folderInput" webkitdirectory directory multiple style="display:none">
             <div style="text-align:center; margin-top:10px;">
@@ -323,7 +323,7 @@
 
         <div class="loading" id="loading">
             <div class="spinner"></div>
-            <p>Analizando archivo .sor...</p>
+            <p>Analizando archivo...</p>
         </div>
 
         <div class="error-msg" id="errorMsg"></div>
@@ -490,16 +490,17 @@
         });
 
         async function processFiles(fileList) {
-            // Filter .sor files
+            // Filter .sor and .trc files
             const sorFiles = [];
             for (let i = 0; i < fileList.length; i++) {
-                if (fileList[i].name.toLowerCase().endsWith('.sor')) {
+                const name = fileList[i].name.toLowerCase();
+                if (name.endsWith('.sor') || name.endsWith('.trc')) {
                     sorFiles.push(fileList[i]);
                 }
             }
 
             if (sorFiles.length === 0) {
-                showError('No se encontraron archivos .sor.'); return;
+                showError('No se encontraron archivos .sor o .trc.'); return;
             }
 
             // Single file: use original endpoint (backward compatible)
@@ -560,11 +561,33 @@
                     document.getElementById('loading').classList.remove('active');
                     return;
                 }
-                currentData = data;
-                currentData._filename = file.name;
-                multiSession = null;
-                document.getElementById('sidebar').style.display = 'none';
-                renderResults(data);
+                // .trc with multiple wavelengths: show sidebar with each trace
+                if (data._multi_trace && data.traces) {
+                    const traceNames = data.traces.map(t => `${file.name} (${t._wavelength_nm}nm)`);
+                    multiSession = null;
+                    multiCache = {};
+                    // Cache all traces immediately (they're already parsed)
+                    data.traces.forEach((t, i) => {
+                        multiCache[traceNames[i]] = t;
+                    });
+                    // Store trace names for sidebar
+                    window._trcTraceNames = traceNames;
+                    showSidebar(traceNames);
+                    // Auto-select first trace
+                    activeFile = traceNames[0];
+                    currentData = data.traces[0];
+                    currentData._filename = traceNames[0];
+                    document.querySelectorAll('#fileList li').forEach(li => li.classList.remove('active'));
+                    const firstLi = document.getElementById('file-' + cssId(traceNames[0]));
+                    if (firstLi) firstLi.classList.add('active');
+                    renderResults(currentData);
+                } else {
+                    currentData = data;
+                    currentData._filename = file.name;
+                    multiSession = null;
+                    document.getElementById('sidebar').style.display = 'none';
+                    renderResults(data);
+                }
             } catch (err) {
                 showError('Error de conexion con el servidor: ' + err.message);
                 document.getElementById('uploadArea').style.display = '';
@@ -592,7 +615,6 @@
         }
 
         async function selectFile(filename) {
-            if (!multiSession) return;
             activeFile = filename;
 
             // Highlight in sidebar
@@ -600,7 +622,7 @@
             const li = document.getElementById('file-' + cssId(filename));
             if (li) li.classList.add('active');
 
-            // Check cache
+            // Check cache (used for both multi-file sessions and in-memory .trc traces)
             if (multiCache[filename]) {
                 currentData = multiCache[filename];
                 currentData._filename = filename;
@@ -609,6 +631,9 @@
                 document.getElementById('results').classList.add('active');
                 return;
             }
+
+            // No session means in-memory only (shouldn't reach here if cached)
+            if (!multiSession) return;
 
             // Fetch from server
             document.getElementById('loading').classList.add('active');

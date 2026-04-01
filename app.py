@@ -8,6 +8,7 @@ from flask import Flask, request, jsonify, send_from_directory
 
 from pyotdr import read as pyotdr_read
 import pyotdr.parts as _pyotdr_parts
+from trc_parser import parse_trc_file
 
 # Monkey-patch pyotdr to handle latin-1 encoded strings in .sor files.
 # Some OTDR vendors (e.g., EXFO) store location names with accented
@@ -247,6 +248,23 @@ def index():
     return send_from_directory("static", "index.html")
 
 
+def _is_supported_file(filename):
+    """Check if filename is a supported OTDR format."""
+    return filename.lower().endswith((".sor", ".trc"))
+
+
+def _analyze_file(filepath):
+    """Analyze a .sor or .trc file and return result(s).
+
+    For .sor files returns a single dict.
+    For .trc files returns a list of dicts (one per wavelength).
+    """
+    if filepath.lower().endswith(".trc"):
+        return parse_trc_file(filepath)
+    else:
+        return parse_sor_file(filepath)
+
+
 @app.route("/api/analyze", methods=["POST"])
 def analyze():
     if "file" not in request.files:
@@ -256,16 +274,21 @@ def analyze():
     if file.filename == "":
         return jsonify({"error": "No se selecciono archivo"}), 400
 
-    if not file.filename.lower().endswith(".sor"):
-        return jsonify({"error": "El archivo debe ser .sor"}), 400
+    if not _is_supported_file(file.filename):
+        return jsonify({"error": "El archivo debe ser .sor o .trc"}), 400
 
-    # Save to temp file
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".sor") as tmp:
+    suffix = ".trc" if file.filename.lower().endswith(".trc") else ".sor"
+    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
         file.save(tmp.name)
         tmp_path = tmp.name
 
     try:
-        result = parse_sor_file(tmp_path)
+        result = _analyze_file(tmp_path)
+        if isinstance(result, list):
+            if len(result) == 1:
+                return jsonify(result[0])
+            # Multiple wavelengths: return as multi-trace response
+            return jsonify({"_multi_trace": True, "traces": result})
         return jsonify(result)
     except Exception as e:
         return jsonify({"error": f"Error al analizar el archivo: {str(e)}"}), 500
@@ -275,7 +298,7 @@ def analyze():
 
 @app.route("/api/upload-multi", methods=["POST"])
 def upload_multi():
-    """Upload multiple .sor files and return a session with file list."""
+    """Upload multiple .sor/.trc files and return a session with file list."""
     import uuid
     import time
 
@@ -283,10 +306,10 @@ def upload_multi():
     if not files:
         return jsonify({"error": "No se proporcionaron archivos"}), 400
 
-    # Filter only .sor files
-    sor_files = [f for f in files if f.filename.lower().endswith(".sor")]
-    if not sor_files:
-        return jsonify({"error": "No se encontraron archivos .sor"}), 400
+    # Filter supported OTDR files
+    otdr_files = [f for f in files if _is_supported_file(f.filename)]
+    if not otdr_files:
+        return jsonify({"error": "No se encontraron archivos .sor o .trc"}), 400
 
     # Create temp directory for this session
     session_id = str(uuid.uuid4())
@@ -294,8 +317,10 @@ def upload_multi():
     os.makedirs(session_dir, exist_ok=True)
 
     file_map = {}
-    for f in sor_files:
-        # Use only the basename (browsers send relative paths for folder uploads)
+    # Track .trc files that need wavelength expansion
+    trc_wavelengths = {}  # virtual_name -> (filepath, trace_index)
+
+    for f in otdr_files:
         safe_name = os.path.basename(f.filename)
         dest = os.path.join(session_dir, safe_name)
         counter = 1
@@ -305,11 +330,30 @@ def upload_multi():
             dest = os.path.join(session_dir, safe_name)
             counter += 1
         f.save(dest)
-        file_map[safe_name] = dest
+
+        # For .trc files, check how many wavelengths they contain
+        if safe_name.lower().endswith(".trc"):
+            try:
+                traces = parse_trc_file(dest)
+                if len(traces) > 1:
+                    # Create virtual entries for each wavelength
+                    base, ext = os.path.splitext(safe_name)
+                    for t_idx, t in enumerate(traces):
+                        wl = t.get("_wavelength_nm", "?")
+                        virtual_name = f"{base} ({wl}nm){ext}"
+                        file_map[virtual_name] = dest
+                        trc_wavelengths[virtual_name] = (dest, t_idx)
+                else:
+                    file_map[safe_name] = dest
+            except Exception:
+                file_map[safe_name] = dest
+        else:
+            file_map[safe_name] = dest
 
     _upload_sessions[session_id] = {
         "files": file_map,
         "created": time.time(),
+        "trc_wavelengths": trc_wavelengths,
     }
 
     # Clean old sessions (older than 1 hour)
@@ -335,8 +379,23 @@ def analyze_session_file(session_id, filename):
     if not filepath or not os.path.exists(filepath):
         return jsonify({"error": f"Archivo '{filename}' no encontrado"}), 404
 
+    # Check if this is a virtual .trc wavelength entry
+    trc_info = session.get("trc_wavelengths", {}).get(filename)
+
     try:
-        result = parse_sor_file(filepath)
+        if trc_info:
+            # Parse specific wavelength from .trc
+            trc_path, trace_idx = trc_info
+            traces = parse_trc_file(trc_path)
+            if trace_idx < len(traces):
+                result = traces[trace_idx]
+            else:
+                result = traces[0]
+        elif filepath.lower().endswith(".trc"):
+            traces = parse_trc_file(filepath)
+            result = traces[0]
+        else:
+            result = parse_sor_file(filepath)
         return jsonify(result)
     except Exception as e:
         return jsonify({"error": f"Error al analizar '{filename}': {str(e)}"}), 500
