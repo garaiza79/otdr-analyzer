@@ -407,9 +407,14 @@ def analyze_drive():
         return jsonify({"error": "No se proporciono URL"}), 400
 
     url = data["url"].strip()
+
+    # Detect folder links and show helpful message
+    if re.search(r'/drive/folders/', url):
+        return jsonify({"error": "El enlace es de una carpeta de Google Drive. Solo se admiten enlaces a archivos individuales (.sor)."}), 400
+
     file_id = extract_drive_file_id(url)
     if not file_id:
-        return jsonify({"error": "No se pudo extraer el ID del archivo de Google Drive"}), 400
+        return jsonify({"error": "No se pudo extraer el ID del archivo de Google Drive. Verifica que el enlace sea valido."}), 400
 
     tmp_path = None
     try:
