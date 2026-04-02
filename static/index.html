@@ -39,6 +39,25 @@
 
         .header h1 { font-size: 1.4rem; font-weight: 600; color: #60a5fa; }
         .header p { font-size: 0.82rem; color: #7b8ba8; margin-top: 2px; }
+        .header { position: relative; }
+
+        .lang-toggle {
+            position: absolute; right: 40px; top: 50%; transform: translateY(-50%);
+            display: flex; align-items: center; gap: 0;
+            background: rgba(10, 18, 35, 0.7); border: 1px solid #2a4a7f;
+            border-radius: 22px; overflow: hidden;
+        }
+        .lang-btn {
+            padding: 7px 16px; font-size: 0.78rem; font-weight: 600;
+            color: #5a6f8a; background: transparent; border: none;
+            cursor: pointer; transition: all 0.25s; white-space: nowrap;
+            letter-spacing: 0.3px;
+        }
+        .lang-btn.active {
+            background: linear-gradient(135deg, rgba(59,130,246,0.4), rgba(59,130,246,0.25));
+            color: #93c5fd; text-shadow: 0 0 8px rgba(96,165,250,0.3);
+        }
+        .lang-btn:hover:not(.active) { color: #a0b4d0; background: rgba(30,58,95,0.3); }
 
         .container { max-width: 1400px; margin: 0 auto; padding: 30px; }
 
@@ -293,8 +312,12 @@
         <img src="/static/logo-full.svg" alt="Flo Networks" class="header-logo" style="filter: brightness(0) invert(1);">
         <div class="header-divider"></div>
         <div>
-            <h1>Analizador OTDR</h1>
-            <p>Analisis de archivos .sor / .trc - Reflectometria de fibra optica</p>
+            <h1 id="headerTitle">Analizador OTDR</h1>
+            <p id="headerSubtitle">Analisis de archivos .sor / .trc - Reflectometria de fibra optica</p>
+        </div>
+        <div class="lang-toggle">
+            <button class="lang-btn active" id="langEs" onclick="switchLang('es')">Español</button>
+            <button class="lang-btn" id="langEn" onclick="switchLang('en')">English</button>
         </div>
     </div>
 
@@ -305,25 +328,25 @@
                     <path d="M32 8L20 24h8v16h8V24h8L32 8z" fill="#60a5fa" opacity="0.6"/>
                     <path d="M8 44v8a4 4 0 004 4h40a4 4 0 004-4v-8" stroke="#60a5fa" stroke-width="3" stroke-linecap="round" opacity="0.4"/>
                 </svg>
-                <h2>Arrastra tus archivos .sor / .trc aqui</h2>
-                <p>o haz clic para seleccionar archivos</p>
+                <h2 id="uploadTitle">Arrastra tus archivos .sor / .trc aqui</h2>
+                <p id="uploadSubtitle">o haz clic para seleccionar archivos</p>
                 <input type="file" id="fileInput" accept=".sor,.trc" multiple>
             </div>
             <input type="file" id="folderInput" webkitdirectory directory multiple style="display:none">
             <div style="text-align:center; margin-top:10px;">
-                <button id="folderLink" style="background:none; border:none; color:#60a5fa; font-size:0.95rem; cursor:pointer; text-decoration:underline; padding:6px 12px;">Seleccionar carpeta completa</button>
+                <button id="folderLink" style="background:none; border:none; color:#60a5fa; font-size:0.95rem; cursor:pointer; text-decoration:underline; padding:6px 12px;" data-i18n="selectFolder">Seleccionar carpeta completa</button>
             </div>
-            <div class="or-divider">o</div>
+            <div class="or-divider" data-i18n="orDivider">o</div>
             <div class="drive-input-row">
-                <input type="text" id="driveUrl" placeholder="Pega un link de Google Drive (https://drive.google.com/file/d/...)">
-                <button class="btn-drive" onclick="loadFromDrive()">Cargar desde Drive</button>
+                <input type="text" id="driveUrl" placeholder="Pega un link de Google Drive (https://drive.google.com/file/d/...)" data-i18n-placeholder="drivePlaceholder">
+                <button class="btn-drive" onclick="loadFromDrive()" data-i18n="loadFromDrive">Cargar desde Drive</button>
             </div>
-            <p style="color: #93a8c4; font-size: 0.9rem; margin-top: 10px; text-align: center;">Google Drive: Para que funcione la descarga, el archivo debe estar compartido como <strong style="color: #c8d6e8;">"Cualquier persona con el enlace"</strong></p>
+            <p id="driveHint" style="color: #93a8c4; font-size: 0.9rem; margin-top: 10px; text-align: center;">Google Drive: Para que funcione la descarga, el archivo debe estar compartido como <strong style="color: #c8d6e8;">"Cualquier persona con el enlace"</strong></p>
         </div>
 
         <div class="loading" id="loading">
             <div class="spinner"></div>
-            <p>Analizando archivo...</p>
+            <p id="loadingText">Analizando archivo...</p>
         </div>
 
         <div class="error-msg" id="errorMsg"></div>
@@ -333,7 +356,7 @@
             <div class="sidebar" id="sidebar" style="display:none;">
                 <div class="sidebar-header">
                     <svg viewBox="0 0 20 20" fill="#60a5fa"><path d="M2 4a2 2 0 012-2h4l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V4z"/></svg>
-                    Folder de Trazos
+                    <span data-i18n="traceFolder">Folder de Trazos</span>
                 </div>
                 <ul class="sidebar-list" id="fileList"></ul>
                 <div class="sidebar-count" id="fileCount"></div>
@@ -342,15 +365,15 @@
             <!-- Main content area -->
             <div class="main-content">
             <div class="top-bar">
-                <button class="btn" onclick="resetApp()">Cargar otro archivo</button>
-                <button class="btn btn-pdf" onclick="exportPDF()">Exportar PDF</button>
+                <button class="btn" onclick="resetApp()" data-i18n="loadAnother">Cargar otro archivo</button>
+                <button class="btn btn-pdf" onclick="exportPDF()" data-i18n="exportPdf">Exportar PDF</button>
             </div>
 
             <!-- Summary -->
             <div class="section" id="sectionSummary">
                 <div class="section-title">
                     <svg viewBox="0 0 20 20" fill="#60a5fa"><path d="M10 2a8 8 0 100 16 8 8 0 000-16zm1 11H9v-2h2v2zm0-4H9V5h2v4z"/></svg>
-                    Resumen del Enlace
+                    <span data-i18n="linkSummary">Resumen del Enlace</span>
                 </div>
                 <div class="summary-grid" id="summaryGrid"></div>
             </div>
@@ -359,33 +382,33 @@
             <div class="section" id="sectionTrace">
                 <div class="section-title">
                     <svg viewBox="0 0 20 20" fill="#60a5fa"><path d="M2 16V4h2v10h14v2H2zm4-4V8h2v4H6zm4-6v6h2V6h-2zm4 2v4h2V8h-2z"/></svg>
-                    Trazo OTDR
+                    <span data-i18n="otdrTrace">Trazo OTDR</span>
                 </div>
                 <div class="chart-container">
                     <canvas id="traceChart"></canvas>
                 </div>
-                <div class="chart-hint">Scroll para zoom | Shift + arrastrar para desplazar | Doble click para resetear zoom | Arrastra las lineas A/B para moverlas</div>
+                <div class="chart-hint" id="chartHint">Scroll para zoom | Shift + arrastrar para desplazar | Doble click para resetear zoom | Arrastra las lineas A/B para moverlas</div>
                 <div class="ab-controls">
                     <div class="ab-group">
-                        <label>Linea A (km)</label>
+                        <label data-i18n="lineALabel">Linea A (km)</label>
                         <input type="number" id="lineA" step="0.001" min="0" placeholder="0.000">
                     </div>
                     <div class="ab-group">
-                        <label>Linea B (km)</label>
+                        <label data-i18n="lineBLabel">Linea B (km)</label>
                         <input type="number" id="lineB" step="0.001" min="0" placeholder="0.000">
                     </div>
-                    <button class="btn-sm btn-sm-green" onclick="applyABLines()">Aplicar A-B</button>
-                    <button class="btn-sm btn-sm-red" onclick="clearABLines()">Limpiar A-B</button>
+                    <button class="btn-sm btn-sm-green" onclick="applyABLines()" data-i18n="applyAB">Aplicar A-B</button>
+                    <button class="btn-sm btn-sm-red" onclick="clearABLines()" data-i18n="clearAB">Limpiar A-B</button>
                     <div class="ab-result" id="abResult" style="display:none;">
-                        <div class="ab-label">Perdida A-B</div>
+                        <div class="ab-label" data-i18n="lossAB">Perdida A-B</div>
                         <div class="ab-value" id="abLossValue">--</div>
                     </div>
                     <div class="ab-result" id="abDistance" style="display:none;">
-                        <div class="ab-label">Distancia A-B</div>
+                        <div class="ab-label" data-i18n="distanceAB">Distancia A-B</div>
                         <div class="ab-value" id="abDistValue">--</div>
                     </div>
                     <div class="ab-result" id="abSlope" style="display:none;">
-                        <div class="ab-label">Pendiente A-B</div>
+                        <div class="ab-label" data-i18n="slopeAB">Pendiente A-B</div>
                         <div class="ab-value" id="abSlopeValue">--</div>
                     </div>
                 </div>
@@ -395,31 +418,31 @@
             <div class="section" id="sectionEvents">
                 <div class="section-title">
                     <svg viewBox="0 0 20 20" fill="#60a5fa"><path d="M3 3h14a1 1 0 011 1v12a1 1 0 01-1 1H3a1 1 0 01-1-1V4a1 1 0 011-1zm0 4v8h14V7H3z"/></svg>
-                    Tabla de Eventos
+                    <span data-i18n="eventsTable">Tabla de Eventos</span>
                 </div>
                 <div class="threshold-config">
                     <div class="threshold-group">
-                        <label>Umbral Conector (dB)</label>
+                        <label data-i18n="thrConnectorLabel">Umbral Conector (dB)</label>
                         <input type="number" id="thrConnector" value="0.5" step="0.01" min="0">
                     </div>
                     <div class="threshold-group">
-                        <label>Umbral Empalme (dB)</label>
+                        <label data-i18n="thrSpliceLabel">Umbral Empalme (dB)</label>
                         <input type="number" id="thrSplice" value="0.25" step="0.01" min="0">
                     </div>
-                    <button class="btn-sm btn-sm-blue" onclick="applyThresholds()">Aplicar Umbrales</button>
+                    <button class="btn-sm btn-sm-blue" onclick="applyThresholds()" data-i18n="applyThresholds">Aplicar Umbrales</button>
                 </div>
                 <div style="overflow-x: auto;">
                     <table class="events-table">
                         <thead>
-                            <tr>
+                            <tr id="eventsHeader">
                                 <th>#</th>
-                                <th>Tipo</th>
-                                <th>Distancia (km)</th>
-                                <th>Perdida (dB)</th>
-                                <th>Umbral (dB)</th>
-                                <th>Estado</th>
-                                <th>Reflexion (dB)</th>
-                                <th>Pendiente (dB/km)</th>
+                                <th data-i18n="thType">Tipo</th>
+                                <th data-i18n="thDistance">Distancia (km)</th>
+                                <th data-i18n="thLoss">Perdida (dB)</th>
+                                <th data-i18n="thThreshold">Umbral (dB)</th>
+                                <th data-i18n="thStatus">Estado</th>
+                                <th data-i18n="thReflection">Reflexion (dB)</th>
+                                <th data-i18n="thSlope">Pendiente (dB/km)</th>
                             </tr>
                         </thead>
                         <tbody id="eventsBody"></tbody>
@@ -431,7 +454,7 @@
             <div class="section" id="sectionMeta">
                 <div class="section-title">
                     <svg viewBox="0 0 20 20" fill="#60a5fa"><path d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 0v12h8V4H6z"/></svg>
-                    Informacion del Equipo y Fibra
+                    <span data-i18n="equipmentInfo">Informacion del Equipo y Fibra</span>
                 </div>
                 <div class="meta-grid" id="metaGrid"></div>
             </div>
@@ -440,6 +463,250 @@
     </div>
 
     <script>
+        // ===================== I18N =====================
+        let currentLang = 'es';
+
+        const i18n = {
+            es: {
+                // Header
+                headerTitle: 'Analizador OTDR',
+                headerSubtitle: 'Analisis de archivos .sor / .trc - Reflectometria de fibra optica',
+                pageTitle: 'Analizador OTDR - Flo Networks',
+                // Upload
+                uploadTitle: 'Arrastra tus archivos .sor / .trc aqui',
+                uploadSubtitle: 'o haz clic para seleccionar archivos',
+                selectFolder: 'Seleccionar carpeta completa',
+                drivePlaceholder: 'Pega un link de Google Drive (https://drive.google.com/file/d/...)',
+                loadFromDrive: 'Cargar desde Drive',
+                driveHint: 'Google Drive: Para que funcione la descarga, el archivo debe estar compartido como <strong style="color: #c8d6e8;">"Cualquier persona con el enlace"</strong>',
+                loadingText: 'Analizando archivo...',
+                orDivider: 'o',
+                // Sidebar
+                traceFolder: 'Folder de Trazos',
+                filesCount: '{n} archivos',
+                // Top bar
+                loadAnother: 'Cargar otro archivo',
+                exportPdf: 'Exportar PDF',
+                // Summary
+                linkSummary: 'Resumen del Enlace',
+                events: 'Eventos',
+                fiberLength: 'Longitud de fibra',
+                totalLoss: 'Perdida total',
+                orl: 'ORL',
+                wavelength: 'Longitud de onda',
+                // Chart
+                otdrTrace: 'Trazo OTDR',
+                chartHint: 'Scroll para zoom | Shift + arrastrar para desplazar | Doble click para resetear zoom | Arrastra las lineas A/B para moverlas',
+                powerDb: 'Potencia (dB)',
+                distanceKm: 'Distancia (km)',
+                // A/B
+                lineALabel: 'Linea A (km)',
+                lineBLabel: 'Linea B (km)',
+                applyAB: 'Aplicar A-B',
+                clearAB: 'Limpiar A-B',
+                lossAB: 'Perdida A-B',
+                distanceAB: 'Distancia A-B',
+                slopeAB: 'Pendiente A-B',
+                abInvalidMsg: 'Ingresa valores validos para las lineas A y B.',
+                // Events table
+                eventsTable: 'Tabla de Eventos',
+                thrConnectorLabel: 'Umbral Conector (dB)',
+                thrSpliceLabel: 'Umbral Empalme (dB)',
+                applyThresholds: 'Aplicar Umbrales',
+                thType: 'Tipo',
+                thDistance: 'Distancia (km)',
+                thLoss: 'Perdida (dB)',
+                thThreshold: 'Umbral (dB)',
+                thStatus: 'Estado',
+                thReflection: 'Reflexion (dB)',
+                thSlope: 'Pendiente (dB/km)',
+                statusExceeds: 'EXCEDE',
+                statusOk: 'OK',
+                // Metadata
+                equipmentInfo: 'Informacion del Equipo y Fibra',
+                metaCableId: 'Cable ID', metaFiberId: 'Fibra ID',
+                metaLocationA: 'Ubicacion A', metaLocationB: 'Ubicacion B',
+                metaFiberType: 'Tipo de fibra', metaCondition: 'Condicion',
+                metaOperator: 'Operador', metaManufacturer: 'Fabricante OTDR',
+                metaModel: 'Modelo OTDR', metaSerial: 'Serie OTDR',
+                metaModule: 'Modulo', metaModuleSerial: 'Serie Modulo',
+                metaSoftware: 'Software', metaPulseWidth: 'Ancho de pulso',
+                metaRange: 'Rango (km)', metaIOR: 'Indice de refraccion',
+                metaDateTime: 'Fecha/Hora', metaCalibration: 'Fecha calibracion',
+                metaLaunchReel: 'Bobina lanzamiento',
+                metaLaunchReelNone: 'No configurada',
+                // Event types (translations from server Spanish keys)
+                evtConnectorStart: 'Conector (inicio)',
+                evtConnectorReflection: 'Conector / Reflexion',
+                evtSpliceFusion: 'Empalme (fusion)',
+                evtSpliceMechanical: 'Empalme (mecanico)',
+                evtEndOfFiber: 'Fin de fibra',
+                evtSaturated: 'Evento saturado / Reflexion fuerte',
+                evtUnknown: 'Desconocido',
+                evtEvent: 'Evento',
+                // Errors
+                noFilesFound: 'No se encontraron archivos .sor o .trc.',
+                serverError: 'El servidor devolvio un error ({status}). Verifica que los archivos no excedan 64 MB en total.',
+                connectionError: 'Error de conexion con el servidor: ',
+                loadingFileError: 'Error cargando {file}: ',
+                invalidDriveLink: 'Pega un link de Google Drive valido.',
+                notDriveLink: 'El link debe ser de Google Drive.',
+                connectionErrorShort: 'Error de conexion: ',
+                // PDF
+                pdfTitle: 'Reporte OTDR',
+                pdfFile: 'Archivo: ',
+                pdfDate: 'Fecha: ',
+                pdfChartError: '(No se pudo capturar el grafico)',
+                pdfThresholds: 'Umbral Conector: {c} dB  |  Umbral Empalme: {s} dB',
+                pdfFooter: 'Flo Networks - Analizador OTDR',
+                pdfPage: 'Pagina {p}/{t}',
+                pdfEvtHeaders: ['#', 'Tipo', 'Dist (km)', 'Perdida (dB)', 'Umbral (dB)', 'Estado', 'Refl (dB)', 'Pend (dB/km)'],
+            },
+            en: {
+                headerTitle: 'OTDR Analyzer',
+                headerSubtitle: '.sor / .trc file analysis - Fiber optic reflectometry',
+                pageTitle: 'OTDR Analyzer - Flo Networks',
+                uploadTitle: 'Drag your .sor / .trc files here',
+                uploadSubtitle: 'or click to select files',
+                selectFolder: 'Select entire folder',
+                drivePlaceholder: 'Paste a Google Drive link (https://drive.google.com/file/d/...)',
+                loadFromDrive: 'Load from Drive',
+                driveHint: 'Google Drive: For the download to work, the file must be shared as <strong style="color: #c8d6e8;">"Anyone with the link"</strong>',
+                loadingText: 'Analyzing file...',
+                orDivider: 'or',
+                traceFolder: 'Trace Folder',
+                filesCount: '{n} files',
+                loadAnother: 'Load another file',
+                exportPdf: 'Export PDF',
+                linkSummary: 'Link Summary',
+                events: 'Events',
+                fiberLength: 'Fiber length',
+                totalLoss: 'Total loss',
+                orl: 'ORL',
+                wavelength: 'Wavelength',
+                otdrTrace: 'OTDR Trace',
+                chartHint: 'Scroll to zoom | Shift + drag to pan | Double click to reset zoom | Drag A/B lines to move them',
+                powerDb: 'Power (dB)',
+                distanceKm: 'Distance (km)',
+                lineALabel: 'Line A (km)',
+                lineBLabel: 'Line B (km)',
+                applyAB: 'Apply A-B',
+                clearAB: 'Clear A-B',
+                lossAB: 'Loss A-B',
+                distanceAB: 'Distance A-B',
+                slopeAB: 'Slope A-B',
+                abInvalidMsg: 'Enter valid values for lines A and B.',
+                eventsTable: 'Events Table',
+                thrConnectorLabel: 'Connector Threshold (dB)',
+                thrSpliceLabel: 'Splice Threshold (dB)',
+                applyThresholds: 'Apply Thresholds',
+                thType: 'Type',
+                thDistance: 'Distance (km)',
+                thLoss: 'Loss (dB)',
+                thThreshold: 'Threshold (dB)',
+                thStatus: 'Status',
+                thReflection: 'Reflection (dB)',
+                thSlope: 'Slope (dB/km)',
+                statusExceeds: 'EXCEEDS',
+                statusOk: 'OK',
+                equipmentInfo: 'Equipment & Fiber Information',
+                metaCableId: 'Cable ID', metaFiberId: 'Fiber ID',
+                metaLocationA: 'Location A', metaLocationB: 'Location B',
+                metaFiberType: 'Fiber type', metaCondition: 'Condition',
+                metaOperator: 'Operator', metaManufacturer: 'OTDR Manufacturer',
+                metaModel: 'OTDR Model', metaSerial: 'OTDR Serial',
+                metaModule: 'Module', metaModuleSerial: 'Module Serial',
+                metaSoftware: 'Software', metaPulseWidth: 'Pulse width',
+                metaRange: 'Range (km)', metaIOR: 'Index of refraction',
+                metaDateTime: 'Date/Time', metaCalibration: 'Calibration date',
+                metaLaunchReel: 'Launch reel',
+                metaLaunchReelNone: 'Not configured',
+                evtConnectorStart: 'Connector (start)',
+                evtConnectorReflection: 'Connector / Reflection',
+                evtSpliceFusion: 'Splice (fusion)',
+                evtSpliceMechanical: 'Splice (mechanical)',
+                evtEndOfFiber: 'End of fiber',
+                evtSaturated: 'Saturated event / Strong reflection',
+                evtUnknown: 'Unknown',
+                evtEvent: 'Event',
+                noFilesFound: 'No .sor or .trc files found.',
+                serverError: 'Server returned an error ({status}). Verify files do not exceed 64 MB total.',
+                connectionError: 'Server connection error: ',
+                loadingFileError: 'Error loading {file}: ',
+                invalidDriveLink: 'Paste a valid Google Drive link.',
+                notDriveLink: 'The link must be from Google Drive.',
+                connectionErrorShort: 'Connection error: ',
+                pdfTitle: 'OTDR Report',
+                pdfFile: 'File: ',
+                pdfDate: 'Date: ',
+                pdfChartError: '(Could not capture chart)',
+                pdfThresholds: 'Connector Threshold: {c} dB  |  Splice Threshold: {s} dB',
+                pdfFooter: 'Flo Networks - OTDR Analyzer',
+                pdfPage: 'Page {p}/{t}',
+                pdfEvtHeaders: ['#', 'Type', 'Dist (km)', 'Loss (dB)', 'Threshold (dB)', 'Status', 'Refl (dB)', 'Slope (dB/km)'],
+            }
+        };
+
+        // Map server-side Spanish event type strings to i18n keys
+        const eventTypeKeyMap = {
+            'Conector (inicio)': 'evtConnectorStart',
+            'Conector / Reflexion': 'evtConnectorReflection',
+            'Empalme (fusion)': 'evtSpliceFusion',
+            'Empalme (mecanico)': 'evtSpliceMechanical',
+            'Fin de fibra': 'evtEndOfFiber',
+            'Evento saturado / Reflexion fuerte': 'evtSaturated',
+            'Desconocido': 'evtUnknown',
+            'Evento': 'evtEvent',
+        };
+
+        function t(key) { return i18n[currentLang][key] || key; }
+
+        function translateEventType(serverType) {
+            const key = eventTypeKeyMap[serverType];
+            return key ? t(key) : serverType;
+        }
+
+        function switchLang(lang) {
+            currentLang = lang;
+            document.getElementById('langEs').classList.toggle('active', lang === 'es');
+            document.getElementById('langEn').classList.toggle('active', lang === 'en');
+
+            // Update page title
+            document.title = t('pageTitle');
+
+            // Update static text by id
+            ['headerTitle', 'headerSubtitle', 'uploadTitle', 'uploadSubtitle',
+             'loadingText', 'chartHint'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = t(id);
+            });
+
+            // Update innerHTML for drive hint (contains HTML)
+            const driveHintEl = document.getElementById('driveHint');
+            if (driveHintEl) driveHintEl.innerHTML = t('driveHint');
+
+            // Update all data-i18n elements
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                el.textContent = t(el.getAttribute('data-i18n'));
+            });
+
+            // Update placeholders
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+                el.placeholder = t(el.getAttribute('data-i18n-placeholder'));
+            });
+
+            // Update file count in sidebar
+            const fcEl = document.getElementById('fileCount');
+            if (fcEl && fcEl.dataset.count) {
+                fcEl.textContent = t('filesCount').replace('{n}', fcEl.dataset.count);
+            }
+
+            // Re-render dynamic content if data loaded
+            if (currentData) {
+                renderResults(currentData);
+            }
+        }
+
         let traceChart = null;
         let currentData = null;
         let abLineA = null;
@@ -500,7 +767,7 @@
             }
 
             if (sorFiles.length === 0) {
-                showError('No se encontraron archivos .sor o .trc.'); return;
+                showError(t('noFilesFound')); return;
             }
 
             // Single file: use original endpoint (backward compatible)
@@ -521,7 +788,7 @@
                 const response = await fetch('/api/upload-multi', { method: 'POST', body: formData });
                 const contentType = response.headers.get('content-type') || '';
                 if (!contentType.includes('application/json')) {
-                    throw new Error(`El servidor devolvio un error (${response.status}). Verifica que los archivos no excedan 64 MB en total.`);
+                    throw new Error(t('serverError').replace('{status}', response.status));
                 }
                 const data = await response.json();
                 if (data.error) {
@@ -536,7 +803,7 @@
                 // Auto-select first file
                 selectFile(data.files[0]);
             } catch (err) {
-                showError('Error de conexion con el servidor: ' + err.message);
+                showError(t('connectionError') + err.message);
                 document.getElementById('uploadArea').style.display = '';
             } finally {
                 document.getElementById('loading').classList.remove('active');
@@ -589,7 +856,7 @@
                     renderResults(data);
                 }
             } catch (err) {
-                showError('Error de conexion con el servidor: ' + err.message);
+                showError(t('connectionError') + err.message);
                 document.getElementById('uploadArea').style.display = '';
             } finally {
                 document.getElementById('loading').classList.remove('active');
@@ -607,7 +874,9 @@
                     ${f}
                 </li>
             `).join('');
-            document.getElementById('fileCount').textContent = `${files.length} archivos`;
+            const fcEl = document.getElementById('fileCount');
+            fcEl.dataset.count = files.length;
+            fcEl.textContent = t('filesCount').replace('{n}', files.length);
         }
 
         function cssId(filename) {
@@ -652,7 +921,7 @@
                 renderResults(currentData);
                 document.getElementById('results').classList.add('active');
             } catch (err) {
-                showError('Error cargando ' + filename + ': ' + err.message);
+                showError(t('loadingFileError').replace('{file}', filename) + err.message);
             } finally {
                 document.getElementById('loading').classList.remove('active');
             }
@@ -669,26 +938,27 @@
             document.getElementById('results').classList.add('active');
             const s = data.summary;
             document.getElementById('summaryGrid').innerHTML = `
-                <div class="summary-card"><div class="value">${s.num_events}</div><div class="label">Eventos</div></div>
-                <div class="summary-card"><div class="value">${s.fiber_length_km} km</div><div class="label">Longitud de fibra</div></div>
-                <div class="summary-card"><div class="value">${s.total_loss_db} dB</div><div class="label">Perdida total</div></div>
-                <div class="summary-card"><div class="value">${s.orl_db} dB</div><div class="label">ORL</div></div>
-                <div class="summary-card"><div class="value">${data.metadata.wavelength_nm}</div><div class="label">Longitud de onda</div></div>
+                <div class="summary-card"><div class="value">${s.num_events}</div><div class="label">${t('events')}</div></div>
+                <div class="summary-card"><div class="value">${s.fiber_length_km} km</div><div class="label">${t('fiberLength')}</div></div>
+                <div class="summary-card"><div class="value">${s.total_loss_db} dB</div><div class="label">${t('totalLoss')}</div></div>
+                <div class="summary-card"><div class="value">${s.orl_db} dB</div><div class="label">${t('orl')}</div></div>
+                <div class="summary-card"><div class="value">${data.metadata.wavelength_nm}</div><div class="label">${t('wavelength')}</div></div>
             `;
             renderChart(data.trace, data.events);
             renderEventsTable(data.events);
 
             const m = data.metadata;
             const metaItems = [
-                ['Cable ID', m.cable_id], ['Fibra ID', m.fiber_id],
-                ['Ubicacion A', m.location_a], ['Ubicacion B', m.location_b],
-                ['Tipo de fibra', m.fiber_type], ['Condicion', m.build_condition],
-                ['Operador', m.operator], ['Fabricante OTDR', m.otdr_manufacturer],
-                ['Modelo OTDR', m.otdr_model], ['Serie OTDR', m.otdr_serial],
-                ['Modulo', m.module], ['Serie Modulo', m.module_serial],
-                ['Software', m.software_version], ['Ancho de pulso', m.pulse_width_ns],
-                ['Rango (km)', m.range_km], ['Indice de refraccion', m.index_of_refraction],
-                ['Fecha/Hora', m.date_time], ['Fecha calibracion', m.calibration_date || 'N/A'],
+                [t('metaCableId'), m.cable_id], [t('metaFiberId'), m.fiber_id],
+                [t('metaLocationA'), m.location_a], [t('metaLocationB'), m.location_b],
+                [t('metaFiberType'), m.fiber_type], [t('metaCondition'), m.build_condition],
+                [t('metaOperator'), m.operator], [t('metaManufacturer'), m.otdr_manufacturer],
+                [t('metaModel'), m.otdr_model], [t('metaSerial'), m.otdr_serial],
+                [t('metaModule'), m.module], [t('metaModuleSerial'), m.module_serial],
+                [t('metaSoftware'), m.software_version], [t('metaPulseWidth'), m.pulse_width_ns],
+                [t('metaRange'), m.range_km], [t('metaIOR'), m.index_of_refraction],
+                [t('metaDateTime'), m.date_time], [t('metaCalibration'), m.calibration_date || 'N/A'],
+                [t('metaLaunchReel'), m.launch_reel_m ? m.launch_reel_m + ' m' : t('metaLaunchReelNone')],
             ];
             document.getElementById('metaGrid').innerHTML = metaItems.map(([k, v]) =>
                 `<div class="meta-item"><span class="key">${k}</span><span class="val">${v || 'N/A'}</span></div>`
@@ -696,8 +966,9 @@
         }
 
         function getThresholdForEvent(eventType) {
-            if (eventType.includes('Conector')) return thresholds.connector;
-            if (eventType.includes('Empalme')) return thresholds.splice;
+            // Works with server-side Spanish strings (from data)
+            if (eventType.includes('Conector') || eventType.includes('Connector')) return thresholds.connector;
+            if (eventType.includes('Empalme') || eventType.includes('Splice')) return thresholds.splice;
             return null;
         }
 
@@ -708,12 +979,13 @@
                 const exceeded = thr !== null && loss > thr;
                 const thrDisplay = thr !== null ? thr.toFixed(2) : '--';
                 const statusDisplay = thr !== null
-                    ? (exceeded ? '<span style="color:#fbbf24;font-weight:700;">EXCEDE</span>' : '<span style="color:#34d399;">OK</span>')
+                    ? (exceeded ? `<span style="color:#fbbf24;font-weight:700;">${t('statusExceeds')}</span>` : `<span style="color:#34d399;">${t('statusOk')}</span>`)
                     : '--';
                 const lossClass = exceeded ? 'loss-exceeded' : getLossClass(evt.splice_loss_db);
+                const displayType = translateEventType(evt.event_type);
                 return `<tr>
                     <td>${evt.number}</td>
-                    <td><span class="event-badge ${getBadgeClass(evt.event_type)}">${evt.event_type}</span></td>
+                    <td><span class="event-badge ${getBadgeClass(evt.event_type)}">${displayType}</span></td>
                     <td>${evt.distance_km}</td>
                     <td><span class="${lossClass}">${evt.splice_loss_db}</span></td>
                     <td>${thrDisplay}</td><td>${statusDisplay}</td>
@@ -760,7 +1032,7 @@
                 type: 'scatter',
                 data: {
                     datasets: [{
-                        label: 'Potencia (dB)',
+                        label: t('powerDb'),
                         data: chartData,
                         borderColor: '#60a5fa',
                         backgroundColor: 'rgba(96, 165, 250, 0.1)',
@@ -778,13 +1050,13 @@
                     scales: {
                         x: {
                             type: 'linear',
-                            title: { display: true, text: 'Distancia (km)', color: '#7b8ba8' },
+                            title: { display: true, text: t('distanceKm'), color: '#7b8ba8' },
                             ticks: { color: '#5a6f8a', maxTicksLimit: 20 },
                             grid: { color: 'rgba(30, 58, 95, 0.3)' },
                         },
                         y: {
                             type: 'linear',
-                            title: { display: true, text: 'Potencia (dB)', color: '#7b8ba8' },
+                            title: { display: true, text: t('powerDb'), color: '#7b8ba8' },
                             ticks: { color: '#5a6f8a' },
                             grid: { color: 'rgba(30, 58, 95, 0.3)' },
                         }
@@ -797,8 +1069,8 @@
                             borderColor: '#1e3a5f', borderWidth: 1,
                             titleColor: '#60a5fa', bodyColor: '#c8d6e8',
                             callbacks: {
-                                title: (items) => items[0] ? `Distancia: ${items[0].parsed.x.toFixed(3)} km` : '',
-                                label: (item) => `Potencia: ${item.parsed.y.toFixed(3)} dB`,
+                                title: (items) => items[0] ? `${t('distanceKm').replace(' (km)', '')}: ${items[0].parsed.x.toFixed(3)} km` : '',
+                                label: (item) => `${t('powerDb').replace(' (dB)', '')}: ${item.parsed.y.toFixed(3)} dB`,
                             }
                         },
                         zoom: {
@@ -817,6 +1089,11 @@
                     onClick: handleChartClick,
                 }
             });
+
+            // Prevent page scroll when mouse is over the chart
+            traceChart.canvas.addEventListener('wheel', function(e) {
+                e.preventDefault();
+            }, { passive: false });
 
             // Double click to reset zoom
             traceChart.canvas.ondblclick = function() {
@@ -852,7 +1129,7 @@
             const bVal = parseFloat(document.getElementById('lineB').value);
 
             if (isNaN(aVal) || isNaN(bVal)) {
-                showError('Ingresa valores validos para las lineas A y B.');
+                showError(t('abInvalidMsg'));
                 setTimeout(hideError, 3000);
                 return;
             }
@@ -979,16 +1256,12 @@
             if (distA < threshold && distA <= distB) {
                 dragTarget = 'A';
                 isDragging = true;
-                traceChart.options.plugins.zoom.pan.enabled = false;
-                traceChart.options.plugins.zoom.zoom.wheel.enabled = false;
                 traceChart.canvas.style.cursor = 'col-resize';
                 if (e.preventDefault) e.preventDefault();
                 if (e.stopPropagation) e.stopPropagation();
             } else if (distB < threshold) {
                 dragTarget = 'B';
                 isDragging = true;
-                traceChart.options.plugins.zoom.pan.enabled = false;
-                traceChart.options.plugins.zoom.zoom.wheel.enabled = false;
                 traceChart.canvas.style.cursor = 'col-resize';
                 if (e.preventDefault) e.preventDefault();
                 if (e.stopPropagation) e.stopPropagation();
@@ -1032,8 +1305,6 @@
                 isDragging = false;
                 dragTarget = null;
                 if (traceChart) {
-                    traceChart.options.plugins.zoom.pan.enabled = true;
-                    traceChart.options.plugins.zoom.zoom.wheel.enabled = true;
                     traceChart.canvas.style.cursor = '';
                     updateABCalculation();
                 }
@@ -1098,11 +1369,12 @@
             // Title next to logo
             pdf.setFontSize(16);
             pdf.setTextColor(33, 58, 165); // Flo Networks blue
-            pdf.text('Reporte OTDR', margin + 46, y + 8);
+            pdf.text(t('pdfTitle'), margin + 46, y + 8);
             pdf.setFontSize(9);
             pdf.setTextColor(100);
-            pdf.text('Archivo: ' + filename, margin + 46, y + 14);
-            pdf.text('Fecha: ' + new Date().toLocaleDateString('es-MX'), margin + 46, y + 19);
+            pdf.text(t('pdfFile') + filename, margin + 46, y + 14);
+            const dateLocale = currentLang === 'en' ? 'en-US' : 'es-MX';
+            pdf.text(t('pdfDate') + new Date().toLocaleDateString(dateLocale), margin + 46, y + 19);
             y += 28;
 
             pdf.setDrawColor(33, 58, 165);
@@ -1113,21 +1385,22 @@
             // Summary
             pdf.setFontSize(12);
             pdf.setTextColor(33, 58, 165);
-            pdf.text('Resumen del Enlace', margin, y);
+            pdf.text(t('linkSummary'), margin, y);
             y += 6;
 
             const s = currentData.summary, m = currentData.metadata;
             pdf.setFontSize(9);
             pdf.setTextColor(60);
             const summaryRows = [
-                ['Eventos', '' + s.num_events, 'Longitud fibra', s.fiber_length_km + ' km'],
-                ['Perdida total', s.total_loss_db + ' dB', 'ORL', s.orl_db + ' dB'],
-                ['Longitud de onda', '' + m.wavelength_nm, 'Indice refraccion', '' + m.index_of_refraction],
-                ['Cable ID', m.cable_id, 'Fibra ID', m.fiber_id],
+                [t('events'), '' + s.num_events, t('fiberLength'), s.fiber_length_km + ' km'],
+                [t('totalLoss'), s.total_loss_db + ' dB', t('orl'), s.orl_db + ' dB'],
+                [t('wavelength'), '' + m.wavelength_nm, t('metaIOR'), '' + m.index_of_refraction],
+                [t('metaCableId'), m.cable_id, t('metaFiberId'), m.fiber_id],
                 ['OTDR', m.otdr_manufacturer + ' ' + m.otdr_model, 'S/N', m.otdr_serial],
-                ['Rango', m.range_km + ' km', 'Ancho pulso', '' + m.pulse_width_ns],
-                ['Modulo', m.module, 'S/N Modulo', m.module_serial],
-                ['Fecha medicion', '' + m.date_time, 'Calibracion', m.calibration_date || 'N/A'],
+                [t('metaRange'), m.range_km + ' km', t('metaPulseWidth'), '' + m.pulse_width_ns],
+                [t('metaModule'), m.module, t('metaModuleSerial'), m.module_serial],
+                [t('metaDateTime'), '' + m.date_time, t('metaCalibration'), m.calibration_date || 'N/A'],
+                [t('metaLaunchReel'), m.launch_reel_m ? m.launch_reel_m + ' m' : t('metaLaunchReelNone'), '', ''],
             ];
             summaryRows.forEach(row => {
                 pdf.setFont(undefined, 'bold'); pdf.text(row[0] + ':', margin, y);
@@ -1143,7 +1416,7 @@
             // Chart
             pdf.setFontSize(12);
             pdf.setTextColor(33, 58, 165);
-            pdf.text('Trazo OTDR', margin, y);
+            pdf.text(t('otdrTrace'), margin, y);
             y += 5;
             try {
                 const chartCanvas = document.getElementById('traceChart');
@@ -1152,7 +1425,7 @@
                 pdf.addImage(chartImg, 'PNG', margin, y, contentW, chartH);
                 y += chartH + 3;
             } catch (e) {
-                pdf.setFontSize(9); pdf.text('(No se pudo capturar el grafico)', margin, y); y += 8;
+                pdf.setFontSize(9); pdf.text(t('pdfChartError'), margin, y); y += 8;
             }
 
             // A-B
@@ -1162,7 +1435,12 @@
                 const abSl = document.getElementById('abSlopeValue').textContent;
                 pdf.setFontSize(9);
                 pdf.setTextColor(100, 50, 200);
-                pdf.text(`Linea A: ${abLineA.toFixed(3)} km | Linea B: ${abLineB.toFixed(3)} km | Perdida: ${abLoss} | Distancia: ${abDist} | Pendiente: ${abSl}`, margin, y);
+                const lblA = currentLang === 'en' ? 'Line A' : 'Linea A';
+                const lblB = currentLang === 'en' ? 'Line B' : 'Linea B';
+                const lblLoss = currentLang === 'en' ? 'Loss' : 'Perdida';
+                const lblDist = currentLang === 'en' ? 'Distance' : 'Distancia';
+                const lblSlp = currentLang === 'en' ? 'Slope' : 'Pendiente';
+                pdf.text(`${lblA}: ${abLineA.toFixed(3)} km | ${lblB}: ${abLineB.toFixed(3)} km | ${lblLoss}: ${abLoss} | ${lblDist}: ${abDist} | ${lblSlp}: ${abSl}`, margin, y);
                 y += 7;
             }
 
@@ -1170,14 +1448,14 @@
             if (y > 220) { pdf.addPage(); y = margin; }
             pdf.setFontSize(12);
             pdf.setTextColor(33, 58, 165);
-            pdf.text('Tabla de Eventos', margin, y);
+            pdf.text(t('eventsTable'), margin, y);
             y += 3;
             pdf.setFontSize(7);
-            pdf.text(`Umbral Conector: ${thresholds.connector} dB  |  Umbral Empalme: ${thresholds.splice} dB`, margin, y + 4);
+            pdf.text(t('pdfThresholds').replace('{c}', thresholds.connector).replace('{s}', thresholds.splice), margin, y + 4);
             y += 8;
 
             const colX = [margin, margin+10, margin+50, margin+85, margin+110, margin+130, margin+150, margin+170];
-            const headers = ['#', 'Tipo', 'Dist (km)', 'Perdida (dB)', 'Umbral (dB)', 'Estado', 'Refl (dB)', 'Pend (dB/km)'];
+            const headers = t('pdfEvtHeaders');
 
             pdf.setFillColor(33, 58, 165);
             pdf.rect(margin, y - 3, contentW, 6, 'F');
@@ -1199,15 +1477,15 @@
 
                 pdf.setTextColor(60);
                 pdf.text('' + evt.number, colX[0], y);
-                pdf.text(evt.event_type, colX[1], y);
+                pdf.text(translateEventType(evt.event_type), colX[1], y);
                 pdf.text('' + evt.distance_km, colX[2], y);
                 if (exceeded) { pdf.setTextColor(200, 150, 0); pdf.setFont(undefined, 'bold'); }
                 pdf.text('' + evt.splice_loss_db, colX[3], y);
                 pdf.setFont(undefined, 'normal'); pdf.setTextColor(60);
                 pdf.text(thr !== null ? thr.toFixed(2) : '--', colX[4], y);
                 if (thr !== null) {
-                    if (exceeded) { pdf.setTextColor(200, 150, 0); pdf.text('EXCEDE', colX[5], y); }
-                    else { pdf.setTextColor(0, 150, 80); pdf.text('OK', colX[5], y); }
+                    if (exceeded) { pdf.setTextColor(200, 150, 0); pdf.text(t('statusExceeds'), colX[5], y); }
+                    else { pdf.setTextColor(0, 150, 80); pdf.text(t('statusOk'), colX[5], y); }
                     pdf.setTextColor(60);
                 } else { pdf.text('--', colX[5], y); }
                 pdf.text('' + evt.reflection_db, colX[6], y);
@@ -1220,8 +1498,8 @@
             for (let p = 1; p <= totalPages; p++) {
                 pdf.setPage(p);
                 pdf.setFontSize(7); pdf.setTextColor(150);
-                pdf.text('Flo Networks - Analizador OTDR', margin, 290);
-                pdf.text(`Pagina ${p}/${totalPages}`, pageW - margin - 20, 290);
+                pdf.text(t('pdfFooter'), margin, 290);
+                pdf.text(t('pdfPage').replace('{p}', p).replace('{t}', totalPages), pageW - margin - 20, 290);
             }
 
             pdf.save('reporte_otdr_' + filename.replace('.sor', '') + '.pdf');
@@ -1229,17 +1507,17 @@
 
         // ===================== UTILS =====================
         function getEventColor(type) {
-            if (type.includes('Conector')) return '#60a5fa';
-            if (type.includes('Empalme')) return '#34d399';
-            if (type.includes('Fin')) return '#f87171';
-            if (type.includes('saturado') || type.includes('Reflexion')) return '#fbbf24';
+            if (type.includes('Conector') || type.includes('Connector')) return '#60a5fa';
+            if (type.includes('Empalme') || type.includes('Splice')) return '#34d399';
+            if (type.includes('Fin') || type.includes('End')) return '#f87171';
+            if (type.includes('saturado') || type.includes('Reflexion') || type.includes('Saturated') || type.includes('Reflection')) return '#fbbf24';
             return '#94a3b8';
         }
         function getBadgeClass(type) {
-            if (type.includes('Conector')) return 'badge-connector';
-            if (type.includes('Empalme')) return 'badge-splice';
-            if (type.includes('Fin')) return 'badge-end';
-            if (type.includes('saturado') || type.includes('Reflexion')) return 'badge-reflection';
+            if (type.includes('Conector') || type.includes('Connector')) return 'badge-connector';
+            if (type.includes('Empalme') || type.includes('Splice')) return 'badge-splice';
+            if (type.includes('Fin') || type.includes('End')) return 'badge-end';
+            if (type.includes('saturado') || type.includes('Reflexion') || type.includes('Saturated') || type.includes('Reflection')) return 'badge-reflection';
             return 'badge-default';
         }
         function getLossClass(val) {
@@ -1253,12 +1531,12 @@
         async function loadFromDrive() {
             const url = document.getElementById('driveUrl').value.trim();
             if (!url) {
-                showError('Pega un link de Google Drive valido.');
+                showError(t('invalidDriveLink'));
                 setTimeout(hideError, 3000);
                 return;
             }
             if (!url.includes('drive.google.com')) {
-                showError('El link debe ser de Google Drive.');
+                showError(t('notDriveLink'));
                 setTimeout(hideError, 3000);
                 return;
             }
@@ -1284,7 +1562,7 @@
                 currentData._filename = 'drive_file.sor';
                 renderResults(data);
             } catch (err) {
-                showError('Error de conexion: ' + err.message);
+                showError(t('connectionErrorShort') + err.message);
                 document.getElementById('uploadArea').style.display = '';
             } finally {
                 document.getElementById('loading').classList.remove('active');

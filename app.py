@@ -99,9 +99,12 @@ def parse_sor_file(filepath):
         "pulse_width_ns": fxd_params.get("pulse width", "N/A"),
         "range_km": range_km,
         "index_of_refraction": fxd_params.get("index", "N/A"),
-        "date_time": fxd_params.get("date/time", "N/A"),
+        "date_time": re.sub(r'\s*\(\d+ sec\)', '', fxd_params.get("date/time", "N/A")),
         "calibration_date": calibration_date,
+        "launch_reel_m": round(int(gen_params.get("user offset distance", 0) or 0) / 10, 1),
     }
+
+    launch_reel_km = metadata["launch_reel_m"] / 1000
 
     # Extract events - pyotdr uses "event 1", "event 2", etc. keys
     # Values are stored as strings, need to convert to float
@@ -142,7 +145,7 @@ def parse_sor_file(filepath):
 
     # Extract trace data from tracedata list
     # tracedata is a list of strings like "0.001234\t3.456000\n"
-    trace = extract_trace(tracedata)
+    trace = extract_trace(tracedata, launch_reel_km)
 
     return {
         "metadata": metadata,
@@ -213,8 +216,12 @@ def classify_event(type_code, event_num, total_events):
         return "Evento"
 
 
-def extract_trace(tracedata):
-    """Extract trace data from pyotdr tracedata list for graphing."""
+def extract_trace(tracedata, launch_reel_km=0):
+    """Extract trace data from pyotdr tracedata list for graphing.
+
+    If *launch_reel_km* is given, shift all distances so that the fiber
+    start (after the launch reel) is at km 0.
+    """
     trace = {"distances_km": [], "power_db": []}
 
     if not tracedata:
@@ -235,7 +242,7 @@ def extract_trace(tracedata):
             try:
                 dist = float(parts[0])
                 power = float(parts[1])
-                trace["distances_km"].append(round(dist, 4))
+                trace["distances_km"].append(round(dist - launch_reel_km, 4))
                 trace["power_db"].append(round(power, 3))
             except ValueError:
                 continue

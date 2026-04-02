@@ -237,11 +237,18 @@ def _extract_events(stream: bytes, trace_idx: int = 0):
 
         p = pidx + 1
 
-    # Sort by position and remove negative-position events (pre-connector)
-    events = [e for e in events if e["position_m"] >= -0.1]
     events.sort(key=lambda e: e["position_m"])
 
-    return events
+    # Extract launch reel distance from negative-position events
+    launch_reel_m = 0.0
+    neg_events = [e for e in events if e["position_m"] < -0.1]
+    if neg_events:
+        launch_reel_m = round(abs(neg_events[0]["position_m"]), 1)
+
+    # Remove negative-position events (pre-connector / launch reel)
+    events = [e for e in events if e["position_m"] >= -0.1]
+
+    return events, launch_reel_m
 
 
 # ── main public API ─────────────────────────────────────────────────
@@ -335,21 +342,23 @@ def parse_trc_file(filepath: str) -> list[dict]:
         c = 299792458.0
         dist_per_sample = (sampling_period * c) / (2 * ior)
 
+        # Events (extract before trace so we know launch reel offset)
+        raw_events, launch_reel_m = _extract_events(stream, t_idx)
+        launch_reel_km = launch_reel_m / 1000
+
         # Build trace arrays (downsampled for browser)
+        # Shift distances by launch reel so trace km 0 = fiber start
         max_points = 2000
         step = max(1, len(samples) // max_points)
         distances_km = []
         power_db = []
         for i in range(0, len(samples), step):
-            d = round(i * dist_per_sample / 1000, 4)
+            d = round(i * dist_per_sample / 1000 - launch_reel_km, 4)
             p = round(samples[i] / 1000.0, 3)  # raw → dB (milli-dB units)
             distances_km.append(d)
             power_db.append(p)
 
-        total_distance_km = round(len(samples) * dist_per_sample / 1000, 4)
-
-        # Events
-        raw_events = _extract_events(stream, t_idx)
+        total_distance_km = round(len(samples) * dist_per_sample / 1000 - launch_reel_km, 4)
         events = []
         for i, evt in enumerate(raw_events):
             events.append({
@@ -397,6 +406,7 @@ def parse_trc_file(filepath: str) -> list[dict]:
                 "index_of_refraction": ior,
                 "date_time": "N/A",
                 "calibration_date": "N/A",
+                "launch_reel_m": launch_reel_m,
             },
             "events": events,
             "summary": {
