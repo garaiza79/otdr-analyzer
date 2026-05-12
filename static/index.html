@@ -298,6 +298,92 @@
         }
         .error-msg.active { display: block; }
 
+        /* ── Bidirectional mode ────────────────────────────── */
+        .mode-toggle {
+            display: flex; gap: 0; margin-bottom: 24px;
+            background: rgba(10, 18, 35, 0.7); border: 1px solid #2a4a7f;
+            border-radius: 10px; overflow: hidden; width: fit-content;
+        }
+        .mode-btn {
+            padding: 12px 28px; font-size: 0.9rem; font-weight: 600;
+            color: #5a6f8a; background: transparent; border: none;
+            cursor: pointer; transition: all 0.25s;
+        }
+        .mode-btn.active {
+            background: linear-gradient(135deg, rgba(59,130,246,0.4), rgba(59,130,246,0.25));
+            color: #93c5fd; text-shadow: 0 0 8px rgba(96,165,250,0.3);
+        }
+        .mode-btn:hover:not(.active) { color: #a0b4d0; background: rgba(30,58,95,0.3); }
+
+        .bidi-container { display: flex; gap: 20px; align-items: stretch; }
+        .bidi-zone { flex: 1; }
+        .bidi-direction-label {
+            font-size: 1rem; font-weight: 600; color: #60a5fa;
+            margin-bottom: 10px; text-align: center;
+        }
+        .bidi-direction-label.ba { color: #f59e0b; }
+        .bidi-dropzone {
+            border: 2px dashed #2a4a7f; border-radius: 12px; padding: 30px 20px;
+            text-align: center; background: rgba(16, 28, 50, 0.6); cursor: pointer;
+            transition: all 0.3s; min-height: 130px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .bidi-dropzone:hover, .bidi-dropzone.dragover {
+            border-color: #60a5fa; background: rgba(30, 58, 95, 0.4); transform: translateY(-2px);
+        }
+        .bidi-dropzone.loaded {
+            border-color: #34d399; border-style: solid;
+            background: rgba(16, 185, 129, 0.08);
+        }
+        .bidi-dropzone.loaded:hover { background: rgba(16, 185, 129, 0.15); }
+        .bidi-dropzone p { color: #5a6f8a; font-size: 0.85rem; margin-top: 8px; }
+        .bidi-dropzone .bidi-filename {
+            color: #34d399; font-weight: 600; font-size: 0.9rem; margin-top: 6px;
+            word-break: break-all;
+        }
+        .bidi-dropzone input { display: none; }
+        .bidi-arrow {
+            display: flex; align-items: center; justify-content: center;
+            font-size: 2.2rem; color: #2a4a7f; padding: 0 8px; margin-top: 30px;
+        }
+        .bidi-analyze-row { text-align: center; margin-top: 20px; }
+        .btn-analyze-bidi {
+            padding: 14px 40px; border-radius: 10px; cursor: pointer;
+            font-size: 1rem; font-weight: 600;
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            background: rgba(16, 185, 129, 0.2); color: #34d399; transition: all 0.2s;
+        }
+        .btn-analyze-bidi:hover { background: rgba(16, 185, 129, 0.4); }
+        .btn-analyze-bidi:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        .bidi-chart-legend {
+            display: flex; gap: 24px; justify-content: center; margin-top: 10px; font-size: 0.85rem;
+        }
+        .bidi-legend-item { display: flex; align-items: center; gap: 6px; color: #a0b4d0; }
+        .bidi-legend-color { width: 28px; height: 3px; border-radius: 2px; }
+
+        .bidi-events-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        .bidi-events-table thead th {
+            background: rgba(30, 58, 95, 0.4); padding: 10px 12px; text-align: left;
+            color: #a0b4d0; font-weight: 600; font-size: 0.75rem;
+            text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #1e3a5f;
+        }
+        .bidi-events-table tbody tr { border-bottom: 1px solid rgba(30, 58, 95, 0.3); transition: background 0.2s; }
+        .bidi-events-table tbody tr:hover { background: rgba(30, 58, 95, 0.2); }
+        .bidi-events-table td { padding: 10px 12px; color: #c8d6e8; }
+        .bidi-avg-cell { color: #34d399 !important; font-weight: 700; }
+        .bidi-info-banner {
+            display: flex; align-items: center; gap: 10px; padding: 12px 18px;
+            background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.25);
+            border-radius: 8px; margin-bottom: 20px; font-size: 0.85rem; color: #93c5fd;
+        }
+        .bidi-info-banner svg { width: 20px; height: 20px; flex-shrink: 0; }
+
+        @media (max-width: 768px) {
+            .bidi-container { flex-direction: column; }
+            .bidi-arrow { transform: rotate(90deg); margin-top: 0; padding: 10px 0; }
+        }
+
         @media (max-width: 768px) {
             .container { padding: 16px; }
             .upload-zone { padding: 30px; }
@@ -322,6 +408,12 @@
     </div>
 
     <div class="container">
+        <!-- Mode toggle -->
+        <div class="mode-toggle" id="modeToggle">
+            <button class="mode-btn active" onclick="switchMode('normal')" id="modeNormal" data-i18n="modeNormal">Analisis Normal</button>
+            <button class="mode-btn" onclick="switchMode('bidi')" id="modeBidi" data-i18n="modeBidi">Analisis Bidireccional</button>
+        </div>
+
         <div class="upload-area" id="uploadArea">
             <div class="upload-zone" id="uploadZone">
                 <svg class="upload-icon" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -342,6 +434,36 @@
                 <button class="btn-drive" onclick="loadFromDrive()" data-i18n="loadFromDrive">Cargar desde Drive</button>
             </div>
             <p id="driveHint" style="color: #93a8c4; font-size: 0.9rem; margin-top: 10px; text-align: center;">Google Drive: Para que funcione la descarga, el archivo debe estar compartido como <strong style="color: #c8d6e8;">"Cualquier persona con el enlace"</strong></p>
+        </div>
+
+        <!-- Bidirectional upload area -->
+        <div class="upload-area" id="bidiUploadArea" style="display:none;">
+            <div class="bidi-info-banner">
+                <svg viewBox="0 0 20 20" fill="#60a5fa"><path d="M10 2a8 8 0 100 16 8 8 0 000-16zm1 11H9v-2h2v2zm0-4H9V5h2v4z"/></svg>
+                <span data-i18n="bidiInfo">Selecciona los dos trazos del mismo enlace de fibra para obtener el promedio bidireccional de perdidas.</span>
+            </div>
+            <div class="bidi-container">
+                <div class="bidi-zone">
+                    <div class="bidi-direction-label" data-i18n="bidiLabelAB">Trazo A &rarr; B</div>
+                    <div class="bidi-dropzone" id="dropzoneAB" onclick="document.getElementById('inputAB').click()">
+                        <svg width="40" height="40" viewBox="0 0 64 64" fill="none"><path d="M32 8L20 24h8v16h8V24h8L32 8z" fill="#60a5fa" opacity="0.6"/><path d="M8 44v8a4 4 0 004 4h40a4 4 0 004-4v-8" stroke="#60a5fa" stroke-width="3" stroke-linecap="round" opacity="0.4"/></svg>
+                        <p id="dropzoneABText" data-i18n="bidiDropText">Arrastra archivo .sor / .trc</p>
+                        <input type="file" id="inputAB" accept=".sor,.trc">
+                    </div>
+                </div>
+                <div class="bidi-arrow">&harr;</div>
+                <div class="bidi-zone">
+                    <div class="bidi-direction-label ba" data-i18n="bidiLabelBA">Trazo B &rarr; A</div>
+                    <div class="bidi-dropzone" id="dropzoneBA" onclick="document.getElementById('inputBA').click()">
+                        <svg width="40" height="40" viewBox="0 0 64 64" fill="none"><path d="M32 8L20 24h8v16h8V24h8L32 8z" fill="#f59e0b" opacity="0.6"/><path d="M8 44v8a4 4 0 004 4h40a4 4 0 004-4v-8" stroke="#f59e0b" stroke-width="3" stroke-linecap="round" opacity="0.4"/></svg>
+                        <p id="dropzoneBAText" data-i18n="bidiDropText">Arrastra archivo .sor / .trc</p>
+                        <input type="file" id="inputBA" accept=".sor,.trc">
+                    </div>
+                </div>
+            </div>
+            <div class="bidi-analyze-row">
+                <button class="btn-analyze-bidi" id="btnAnalyzeBidi" onclick="analyzeBidi()" disabled data-i18n="analyzeBidi">Analizar Bidireccional</button>
+            </div>
         </div>
 
         <div class="loading" id="loading">
@@ -460,6 +582,92 @@
             </div>
             </div><!-- /main-content -->
         </div>
+
+        <!-- Bidirectional results -->
+        <div id="bidiResults" style="display:none;">
+            <div class="top-bar">
+                <button class="btn" onclick="resetBidi()" data-i18n="loadAnother">Cargar otro archivo</button>
+                <button class="btn btn-pdf" onclick="exportBidiPDF()" data-i18n="exportPdf">Exportar PDF</button>
+            </div>
+
+            <div class="bidi-info-banner" id="bidiFilesBanner"></div>
+
+            <!-- Bidi Summary -->
+            <div class="section">
+                <div class="section-title">
+                    <svg viewBox="0 0 20 20" fill="#60a5fa"><path d="M10 2a8 8 0 100 16 8 8 0 000-16zm1 11H9v-2h2v2zm0-4H9V5h2v4z"/></svg>
+                    <span data-i18n="bidiSummaryTitle">Resumen Bidireccional</span>
+                </div>
+                <div class="summary-grid" id="bidiSummaryGrid"></div>
+            </div>
+
+            <!-- Bidi Overlay Chart -->
+            <div class="section">
+                <div class="section-title">
+                    <svg viewBox="0 0 20 20" fill="#60a5fa"><path d="M2 16V4h2v10h14v2H2zm4-4V8h2v4H6zm4-6v6h2V6h-2zm4 2v4h2V8h-2z"/></svg>
+                    <span data-i18n="bidiTraceOverlay">Trazos Superpuestos</span>
+                </div>
+                <div class="chart-container">
+                    <canvas id="bidiChart"></canvas>
+                </div>
+                <div class="bidi-chart-legend">
+                    <div class="bidi-legend-item">
+                        <div class="bidi-legend-color" style="background:#60a5fa;"></div>
+                        <span id="bidiLegendAB">A &rarr; B</span>
+                    </div>
+                    <div class="bidi-legend-item">
+                        <div class="bidi-legend-color" style="background:#f59e0b;"></div>
+                        <span id="bidiLegendBA">B &rarr; A (invertido)</span>
+                    </div>
+                </div>
+                <div class="chart-hint" id="bidiChartHint">Scroll para zoom | Shift + arrastrar para desplazar | Doble click para resetear zoom</div>
+            </div>
+
+            <!-- Bidi Events Table -->
+            <div class="section">
+                <div class="section-title">
+                    <svg viewBox="0 0 20 20" fill="#60a5fa"><path d="M3 3h14a1 1 0 011 1v12a1 1 0 01-1 1H3a1 1 0 01-1-1V4a1 1 0 011-1zm0 4v8h14V7H3z"/></svg>
+                    <span data-i18n="bidiEventsTitle">Eventos Bidireccionales (Promedio)</span>
+                </div>
+                <div class="threshold-config">
+                    <div class="threshold-group">
+                        <label data-i18n="thrConnectorLabel">Umbral Conector (dB)</label>
+                        <input type="number" id="bidiThrConnector" value="0.5" step="0.01" min="0">
+                    </div>
+                    <div class="threshold-group">
+                        <label data-i18n="thrSpliceLabel">Umbral Empalme (dB)</label>
+                        <input type="number" id="bidiThrSplice" value="0.25" step="0.01" min="0">
+                    </div>
+                    <button class="btn-sm btn-sm-blue" onclick="applyBidiThresholds()" data-i18n="applyThresholds">Aplicar Umbrales</button>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table class="bidi-events-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th data-i18n="thDistance">Distancia (km)</th>
+                                <th data-i18n="thType">Tipo</th>
+                                <th data-i18n="bidiLossAB">Perdida A&rarr;B (dB)</th>
+                                <th data-i18n="bidiLossBA">Perdida B&rarr;A (dB)</th>
+                                <th data-i18n="bidiLossAvg">Promedio (dB)</th>
+                                <th data-i18n="thThreshold">Umbral (dB)</th>
+                                <th data-i18n="thStatus">Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody id="bidiEventsBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Bidi Metadata -->
+            <div class="section">
+                <div class="section-title">
+                    <svg viewBox="0 0 20 20" fill="#60a5fa"><path d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 0v12h8V4H6z"/></svg>
+                    <span data-i18n="equipmentInfo">Informacion del Equipo y Fibra</span>
+                </div>
+                <div class="meta-grid" id="bidiMetaGrid"></div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -561,6 +769,46 @@
                 pdfFooter: 'Flo Networks - Analizador OTDR',
                 pdfPage: 'Pagina {p}/{t}',
                 pdfEvtHeaders: ['#', 'Tipo', 'Dist (km)', 'Perdida (dB)', 'Umbral (dB)', 'Estado', 'Refl (dB)', 'Pend (dB/km)'],
+                // Bidirectional
+                modeNormal: 'Analisis Normal',
+                modeBidi: 'Analisis Bidireccional',
+                bidiInfo: 'Selecciona los dos trazos del mismo enlace de fibra para obtener el promedio bidireccional de perdidas.',
+                bidiLabelAB: 'Trazo A → B',
+                bidiLabelBA: 'Trazo B → A',
+                bidiDropText: 'Arrastra archivo .sor / .trc',
+                analyzeBidi: 'Analizar Bidireccional',
+                bidiSummaryTitle: 'Resumen Bidireccional',
+                bidiTraceOverlay: 'Trazos Superpuestos',
+                bidiEventsTitle: 'Eventos Bidireccionales (Promedio)',
+                bidiLossAB: 'Perdida A→B (dB)',
+                bidiLossBA: 'Perdida B→A (dB)',
+                bidiLossAvg: 'Promedio (dB)',
+                bidiLegendABText: 'A → B',
+                bidiLegendBAText: 'B → A (invertido)',
+                bidiFilesBannerText: 'A→B: {ab} | B→A: {ba}',
+                bidiAvgLoss: 'Perdida promedio',
+                bidiChartHint: 'Scroll para zoom | Shift + arrastrar para desplazar | Doble click para resetear zoom',
+                bidiUnmatched: 'Sin par',
+                bidiPdfTitle: 'Reporte OTDR Bidireccional',
+                bidiPdfEvtHeaders: ['#', 'Dist (km)', 'Tipo', 'A→B (dB)', 'B→A (dB)', 'Prom (dB)', 'Umbral', 'Estado'],
+                bidiPdfIdent: 'Identificacion',
+                bidiPdfTestParams: 'Parametros de prueba',
+                bidiPdfResults: 'Resultados',
+                bidiPdfSpanLength: 'Longitud del tramo',
+                bidiPdfSpanLoss: 'Perdida del tramo',
+                bidiPdfAvgLossKm: 'Perdida promedio (dB/km)',
+                bidiPdfAvgSpliceLoss: 'Perdida promedio empalme',
+                bidiPdfMaxSpliceLoss: 'Perdida maxima empalme',
+                bidiPdfSection: 'Seccion',
+                bidiPdfCumLoss: 'Acum (dB)',
+                bidiPdfAttenuation: 'Atten (dB/km)',
+                bidiPdfSectionLen: 'Largo (km)',
+                bidiPdfEquipAB: 'Equipo A→B',
+                bidiPdfEquipBA: 'Equipo B→A',
+                bidiPdfIndivTitle: 'Reporte Individual',
+                bidiPdfDirection: 'Direccion',
+                bidiPdfEvtHeadersFull: ['Tipo', '#', 'Ubicacion (km)', 'Largo (km)', 'Atten Prom (dB)', 'Perdida Prom (dB)', 'Acum (dB)', 'A→B (dB)', 'B→A (dB)', 'Estado'],
+                bidiPdfThresholds: 'Umbrales',
             },
             en: {
                 headerTitle: 'OTDR Analyzer',
@@ -644,6 +892,46 @@
                 pdfFooter: 'Flo Networks - OTDR Analyzer',
                 pdfPage: 'Page {p}/{t}',
                 pdfEvtHeaders: ['#', 'Type', 'Dist (km)', 'Loss (dB)', 'Threshold (dB)', 'Status', 'Refl (dB)', 'Slope (dB/km)'],
+                // Bidirectional
+                modeNormal: 'Normal Analysis',
+                modeBidi: 'Bidirectional Analysis',
+                bidiInfo: 'Select the two traces from the same fiber link to get the bidirectional average of losses.',
+                bidiLabelAB: 'Trace A → B',
+                bidiLabelBA: 'Trace B → A',
+                bidiDropText: 'Drop .sor / .trc file here',
+                analyzeBidi: 'Analyze Bidirectional',
+                bidiSummaryTitle: 'Bidirectional Summary',
+                bidiTraceOverlay: 'Overlaid Traces',
+                bidiEventsTitle: 'Bidirectional Events (Average)',
+                bidiLossAB: 'Loss A→B (dB)',
+                bidiLossBA: 'Loss B→A (dB)',
+                bidiLossAvg: 'Average (dB)',
+                bidiLegendABText: 'A → B',
+                bidiLegendBAText: 'B → A (reversed)',
+                bidiFilesBannerText: 'A→B: {ab} | B→A: {ba}',
+                bidiAvgLoss: 'Average loss',
+                bidiChartHint: 'Scroll to zoom | Shift + drag to pan | Double click to reset zoom',
+                bidiUnmatched: 'Unmatched',
+                bidiPdfTitle: 'Bidirectional OTDR Report',
+                bidiPdfEvtHeaders: ['#', 'Dist (km)', 'Type', 'A→B (dB)', 'B→A (dB)', 'Avg (dB)', 'Threshold', 'Status'],
+                bidiPdfIdent: 'Identification',
+                bidiPdfTestParams: 'Test Parameters',
+                bidiPdfResults: 'Results',
+                bidiPdfSpanLength: 'Span Length',
+                bidiPdfSpanLoss: 'Span Loss',
+                bidiPdfAvgLossKm: 'Average Loss (dB/km)',
+                bidiPdfAvgSpliceLoss: 'Average Splice Loss',
+                bidiPdfMaxSpliceLoss: 'Maximum Splice Loss',
+                bidiPdfSection: 'Section',
+                bidiPdfCumLoss: 'Cum (dB)',
+                bidiPdfAttenuation: 'Atten (dB/km)',
+                bidiPdfSectionLen: 'Length (km)',
+                bidiPdfEquipAB: 'Equipment A→B',
+                bidiPdfEquipBA: 'Equipment B→A',
+                bidiPdfIndivTitle: 'Individual Report',
+                bidiPdfDirection: 'Direction',
+                bidiPdfEvtHeadersFull: ['Type', '#', 'Location (km)', 'Length (km)', 'Avg Atten (dB)', 'Avg Loss (dB)', 'Cum (dB)', 'A→B (dB)', 'B→A (dB)', 'Status'],
+                bidiPdfThresholds: 'Thresholds',
             }
         };
 
@@ -704,6 +992,9 @@
             // Re-render dynamic content if data loaded
             if (currentData) {
                 renderResults(currentData);
+            }
+            if (bidiDataAB && bidiDataBA) {
+                renderBidiResults();
             }
         }
 
@@ -952,7 +1243,7 @@
                 [t('metaCableId'), m.cable_id], [t('metaFiberId'), m.fiber_id],
                 [t('metaLocationA'), m.location_a], [t('metaLocationB'), m.location_b],
                 [t('metaFiberType'), m.fiber_type], [t('metaCondition'), m.build_condition],
-                [t('metaOperator'), m.operator], [t('metaManufacturer'), m.otdr_manufacturer],
+                [t('metaOperator'), m.operator], [t('metaManufacturer'), otdrBrand(m)],
                 [t('metaModel'), m.otdr_model], [t('metaSerial'), m.otdr_serial],
                 [t('metaModule'), m.module], [t('metaModuleSerial'), m.module_serial],
                 [t('metaSoftware'), m.software_version], [t('metaPulseWidth'), m.pulse_width_ns],
@@ -1396,7 +1687,7 @@
                 [t('totalLoss'), s.total_loss_db + ' dB', t('orl'), s.orl_db + ' dB'],
                 [t('wavelength'), '' + m.wavelength_nm, t('metaIOR'), '' + m.index_of_refraction],
                 [t('metaCableId'), m.cable_id, t('metaFiberId'), m.fiber_id],
-                ['OTDR', m.otdr_manufacturer + ' ' + m.otdr_model, 'S/N', m.otdr_serial],
+                ['OTDR', otdrBrand(m) + ' ' + m.otdr_model, 'S/N', m.otdr_serial],
                 [t('metaRange'), m.range_km + ' km', t('metaPulseWidth'), '' + m.pulse_width_ns],
                 [t('metaModule'), m.module, t('metaModuleSerial'), m.module_serial],
                 [t('metaDateTime'), '' + m.date_time, t('metaCalibration'), m.calibration_date || 'N/A'],
@@ -1506,6 +1797,17 @@
         }
 
         // ===================== UTILS =====================
+        function otdrBrand(meta) {
+            const mfr = (meta.otdr_manufacturer || '').toUpperCase();
+            const isFlo = mfr.includes('FLO');
+            if (mfr && !isFlo && mfr !== 'N/A' && mfr !== '') return meta.otdr_manufacturer;
+            const model = (meta.otdr_model || '').toUpperCase();
+            if (model.startsWith('FTB') || model.startsWith('MAX') || model.startsWith('MAXTESTER')) return 'EXFO';
+            if (model.startsWith('MT') || model.startsWith('AQ')) return 'Yokogawa';
+            if (model.startsWith('MTS') || model.startsWith('T-BERD')) return 'VIAVI';
+            if (model.startsWith('OFL') || model.startsWith('DTX')) return 'Fluke Networks';
+            return isFlo ? 'N/A' : (meta.otdr_manufacturer || 'N/A');
+        }
         function getEventColor(type) {
             if (type.includes('Conector') || type.includes('Connector')) return '#60a5fa';
             if (type.includes('Empalme') || type.includes('Splice')) return '#34d399';
@@ -1580,6 +1882,821 @@
             activeFile = null; abLineA = null; abLineB = null;
             dragListenersAttached = false; hoverCursorAttached = false;
             hideError();
+        }
+
+        // ===================== BIDIRECTIONAL MODE =====================
+        let currentMode = 'normal';
+        let bidiFileAB = null;  // File object
+        let bidiFileBA = null;
+        let bidiDataAB = null;  // Parsed data
+        let bidiDataBA = null;
+        let bidiChart = null;
+        let bidiMatchedEvents = [];
+        let bidiThresholds = { connector: 0.5, splice: 0.25 };
+
+        function switchMode(mode) {
+            currentMode = mode;
+            document.getElementById('modeNormal').classList.toggle('active', mode === 'normal');
+            document.getElementById('modeBidi').classList.toggle('active', mode === 'bidi');
+
+            if (mode === 'normal') {
+                document.getElementById('uploadArea').style.display = '';
+                document.getElementById('bidiUploadArea').style.display = 'none';
+                document.getElementById('bidiResults').style.display = 'none';
+            } else {
+                document.getElementById('uploadArea').style.display = 'none';
+                document.getElementById('results').classList.remove('active');
+                document.getElementById('bidiUploadArea').style.display = '';
+            }
+            hideError();
+        }
+
+        // Setup bidi dropzones
+        (function setupBidiDropzones() {
+            const zones = [
+                { dropzone: 'dropzoneAB', input: 'inputAB', direction: 'AB' },
+                { dropzone: 'dropzoneBA', input: 'inputBA', direction: 'BA' },
+            ];
+            zones.forEach(({ dropzone, input, direction }) => {
+                const dz = document.getElementById(dropzone);
+                const inp = document.getElementById(input);
+
+                dz.addEventListener('dragover', (e) => { e.preventDefault(); dz.classList.add('dragover'); });
+                dz.addEventListener('dragleave', () => dz.classList.remove('dragover'));
+                dz.addEventListener('drop', (e) => {
+                    e.preventDefault(); dz.classList.remove('dragover');
+                    const files = Array.from(e.dataTransfer.files).filter(f =>
+                        f.name.toLowerCase().endsWith('.sor') || f.name.toLowerCase().endsWith('.trc'));
+                    if (files.length > 0) bidiFileSelected(direction, files[0]);
+                });
+                inp.addEventListener('change', (e) => {
+                    if (e.target.files.length > 0) bidiFileSelected(direction, e.target.files[0]);
+                });
+            });
+        })();
+
+        function bidiFileSelected(direction, file) {
+            const dzId = direction === 'AB' ? 'dropzoneAB' : 'dropzoneBA';
+            const dz = document.getElementById(dzId);
+
+            if (direction === 'AB') {
+                bidiFileAB = file;
+            } else {
+                bidiFileBA = file;
+            }
+
+            dz.classList.add('loaded');
+            const textEl = dz.querySelector('p');
+            textEl.innerHTML = '<span class="bidi-filename">' + file.name + '</span>';
+
+            // Enable analyze button if both files are selected
+            const btn = document.getElementById('btnAnalyzeBidi');
+            btn.disabled = !(bidiFileAB && bidiFileBA);
+        }
+
+        async function analyzeBidi() {
+            if (!bidiFileAB || !bidiFileBA) return;
+
+            hideError();
+            document.getElementById('bidiUploadArea').style.display = 'none';
+            document.getElementById('loading').classList.add('active');
+
+            try {
+                // Analyze both files in parallel
+                const [resultAB, resultBA] = await Promise.all([
+                    analyzeSingleForBidi(bidiFileAB),
+                    analyzeSingleForBidi(bidiFileBA),
+                ]);
+
+                if (resultAB.error) { showError('A→B: ' + resultAB.error); document.getElementById('bidiUploadArea').style.display = ''; return; }
+                if (resultBA.error) { showError('B→A: ' + resultBA.error); document.getElementById('bidiUploadArea').style.display = ''; return; }
+
+                // Handle multi-trace .trc (use first wavelength)
+                bidiDataAB = resultAB._multi_trace ? resultAB.traces[0] : resultAB;
+                bidiDataBA = resultBA._multi_trace ? resultBA.traces[0] : resultBA;
+
+                renderBidiResults();
+            } catch (err) {
+                showError(t('connectionError') + err.message);
+                document.getElementById('bidiUploadArea').style.display = '';
+            } finally {
+                document.getElementById('loading').classList.remove('active');
+            }
+        }
+
+        async function analyzeSingleForBidi(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+            const response = await fetch('/api/analyze', { method: 'POST', body: formData });
+            return await response.json();
+        }
+
+        function renderBidiResults() {
+            const ab = bidiDataAB;
+            const ba = bidiDataBA;
+
+            document.getElementById('bidiResults').style.display = '';
+
+            // Files banner
+            document.getElementById('bidiFilesBanner').innerHTML =
+                '<svg viewBox="0 0 20 20" fill="#60a5fa" style="width:20px;height:20px;flex-shrink:0;"><path d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"/></svg>' +
+                '<span>' + t('bidiFilesBannerText').replace('{ab}', bidiFileAB.name).replace('{ba}', bidiFileBA.name) + '</span>';
+
+            // Summary
+            const fiberLen = ab.summary.fiber_length_km;
+            const avgLoss = ((ab.summary.total_loss_db + ba.summary.total_loss_db) / 2).toFixed(4);
+            document.getElementById('bidiSummaryGrid').innerHTML = `
+                <div class="summary-card"><div class="value">${fiberLen} km</div><div class="label">${t('fiberLength')}</div></div>
+                <div class="summary-card"><div class="value">${avgLoss} dB</div><div class="label">${t('bidiAvgLoss')}</div></div>
+                <div class="summary-card"><div class="value">${ab.summary.total_loss_db} dB</div><div class="label">${t('totalLoss')} A→B</div></div>
+                <div class="summary-card"><div class="value">${ba.summary.total_loss_db} dB</div><div class="label">${t('totalLoss')} B→A</div></div>
+                <div class="summary-card"><div class="value">${ab.summary.orl_db} / ${ba.summary.orl_db} dB</div><div class="label">${t('orl')} (A→B / B→A)</div></div>
+                <div class="summary-card"><div class="value">${ab.metadata.wavelength_nm}</div><div class="label">${t('wavelength')}</div></div>
+            `;
+
+            // Chart
+            renderBidiChart();
+
+            // Match events and render table
+            bidiMatchedEvents = matchBidiEvents(ab.events, ba.events, ba.summary.fiber_length_km);
+            renderBidiEventsTable();
+
+            // Metadata (from A→B trace)
+            const m = ab.metadata;
+            const metaItems = [
+                [t('metaCableId'), m.cable_id], [t('metaFiberId'), m.fiber_id],
+                [t('metaLocationA'), m.location_a], [t('metaLocationB'), m.location_b],
+                [t('metaFiberType'), m.fiber_type],
+                [t('metaManufacturer'), otdrBrand(m)],
+                [t('metaModel'), m.otdr_model], [t('metaSerial'), m.otdr_serial],
+                [t('metaPulseWidth'), m.pulse_width_ns],
+                [t('metaRange'), m.range_km], [t('metaIOR'), m.index_of_refraction],
+                [t('metaDateTime'), m.date_time],
+                [t('metaLaunchReel'), m.launch_reel_m ? m.launch_reel_m + ' m' : t('metaLaunchReelNone')],
+            ];
+            document.getElementById('bidiMetaGrid').innerHTML = metaItems.map(([k, v]) =>
+                `<div class="meta-item"><span class="key">${k}</span><span class="val">${v || 'N/A'}</span></div>`
+            ).join('');
+
+            // Legend text
+            document.getElementById('bidiLegendAB').textContent = t('bidiLegendABText');
+            document.getElementById('bidiLegendBA').textContent = t('bidiLegendBAText');
+            document.getElementById('bidiChartHint').textContent = t('bidiChartHint');
+        }
+
+        function renderBidiChart() {
+            const ab = bidiDataAB;
+            const ba = bidiDataBA;
+            const ctx = document.getElementById('bidiChart').getContext('2d');
+            if (bidiChart) bidiChart.destroy();
+
+            // Use fiber length (last event) for reversal, not full acquisition range
+            const fiberLenAB = ab.summary.fiber_length_km;
+            const fiberLenBA = ba.summary.fiber_length_km;
+            const maxFiber = Math.max(fiberLenAB, fiberLenBA);
+
+            // A→B trace data — clip to fiber length + 2% margin
+            const clipAB = fiberLenAB * 1.02;
+            const dataAB = [];
+            for (let i = 0; i < ab.trace.distances_km.length; i++) {
+                const d = ab.trace.distances_km[i];
+                if (d > clipAB) break;
+                dataAB.push({ x: d, y: ab.trace.power_db[i] });
+            }
+
+            // B→A trace data — reverse using fiber length, clip to fiber
+            const clipBA = fiberLenBA * 1.02;
+            const dataBAReversed = [];
+            for (let i = 0; i < ba.trace.distances_km.length; i++) {
+                const d = ba.trace.distances_km[i];
+                if (d > clipBA) break;
+                dataBAReversed.push({
+                    x: +(fiberLenBA - d).toFixed(4),
+                    y: ba.trace.power_db[i]
+                });
+            }
+            dataBAReversed.sort((a, b) => a.x - b.x);
+
+            // Event annotations from A→B
+            const annotations = {};
+            ab.events.forEach((evt, i) => {
+                annotations['evtAB' + i] = {
+                    type: 'line', scaleID: 'x', value: evt.distance_km,
+                    borderColor: getEventColor(evt.event_type),
+                    borderWidth: 1.2, borderDash: [3, 3],
+                    label: {
+                        display: true, content: `E${evt.number}`,
+                        position: 'start',
+                        backgroundColor: getEventColor(evt.event_type),
+                        color: '#fff', font: { size: 9, weight: 'bold' },
+                        padding: 2, borderRadius: 3,
+                    }
+                };
+            });
+
+            bidiChart = new Chart(ctx, {
+                type: 'scatter',
+                data: {
+                    datasets: [
+                        {
+                            label: 'A → B',
+                            data: dataAB,
+                            borderColor: '#60a5fa',
+                            backgroundColor: 'rgba(96, 165, 250, 0.05)',
+                            borderWidth: 1.5, pointRadius: 0,
+                            showLine: true, fill: false, tension: 0,
+                        },
+                        {
+                            label: 'B → A',
+                            data: dataBAReversed,
+                            borderColor: '#f59e0b',
+                            backgroundColor: 'rgba(245, 158, 11, 0.05)',
+                            borderWidth: 1.5, pointRadius: 0,
+                            showLine: true, fill: false, tension: 0,
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'nearest', intersect: false },
+                    scales: {
+                        x: {
+                            type: 'linear',
+                            title: { display: true, text: t('distanceKm'), color: '#7b8ba8' },
+                            ticks: { color: '#5a6f8a', maxTicksLimit: 20 },
+                            grid: { color: 'rgba(30, 58, 95, 0.3)' },
+                            min: 0,
+                            max: maxFiber * 1.02,
+                        },
+                        y: {
+                            type: 'linear',
+                            title: { display: true, text: t('powerDb'), color: '#7b8ba8' },
+                            ticks: { color: '#5a6f8a' },
+                            grid: { color: 'rgba(30, 58, 95, 0.3)' },
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        annotation: { annotations },
+                        tooltip: {
+                            backgroundColor: 'rgba(13, 21, 37, 0.95)',
+                            borderColor: '#1e3a5f', borderWidth: 1,
+                            titleColor: '#60a5fa', bodyColor: '#c8d6e8',
+                        },
+                        zoom: {
+                            pan: { enabled: true, mode: 'x', modifierKey: 'shift' },
+                            zoom: { wheel: { enabled: true, speed: 0.1 }, pinch: { enabled: true }, mode: 'x' },
+                        }
+                    },
+                }
+            });
+
+            bidiChart.canvas.addEventListener('wheel', (e) => e.preventDefault(), { passive: false });
+            bidiChart.canvas.ondblclick = () => bidiChart.resetZoom();
+        }
+
+        function matchBidiEvents(eventsAB, eventsBA, fiberLengthBA) {
+            // Reverse B→A event distances to A→B frame
+            const reversedBA = eventsBA.map(evt => ({
+                ...evt,
+                distance_km_reversed: +(fiberLengthBA - evt.distance_km).toFixed(4),
+            }));
+            reversedBA.sort((a, b) => a.distance_km_reversed - b.distance_km_reversed);
+
+            const tolerance = 1.0; // km — OTDR distance measurements can differ significantly between directions on long fibers
+            const matched = [];
+            const usedBA = new Set();
+
+            eventsAB.forEach(evtAB => {
+                // Skip end-of-fiber events
+                if (evtAB.event_type === 'Fin de fibra') return;
+
+                let bestIdx = -1;
+                let bestDist = Infinity;
+
+                reversedBA.forEach((evtBA, idx) => {
+                    if (usedBA.has(idx)) return;
+                    if (evtBA.event_type === 'Fin de fibra') return;
+                    const d = Math.abs(evtAB.distance_km - evtBA.distance_km_reversed);
+                    if (d < tolerance && d < bestDist) {
+                        bestDist = d;
+                        bestIdx = idx;
+                    }
+                });
+
+                if (bestIdx >= 0) {
+                    usedBA.add(bestIdx);
+                    const evtBA = reversedBA[bestIdx];
+                    const avgLoss = (evtAB.splice_loss_db + evtBA.splice_loss_db) / 2;
+                    matched.push({
+                        distance_km: evtAB.distance_km,
+                        event_type: evtAB.event_type,
+                        loss_ab: evtAB.splice_loss_db,
+                        loss_ba: evtBA.splice_loss_db,
+                        avg_loss: +avgLoss.toFixed(4),
+                        matched: true,
+                    });
+                } else {
+                    matched.push({
+                        distance_km: evtAB.distance_km,
+                        event_type: evtAB.event_type,
+                        loss_ab: evtAB.splice_loss_db,
+                        loss_ba: null,
+                        avg_loss: evtAB.splice_loss_db,
+                        matched: false,
+                    });
+                }
+            });
+
+            // Add unmatched B→A events
+            reversedBA.forEach((evtBA, idx) => {
+                if (usedBA.has(idx)) return;
+                if (evtBA.event_type === 'Fin de fibra') return;
+                matched.push({
+                    distance_km: evtBA.distance_km_reversed,
+                    event_type: evtBA.event_type,
+                    loss_ab: null,
+                    loss_ba: evtBA.splice_loss_db,
+                    avg_loss: evtBA.splice_loss_db,
+                    matched: false,
+                });
+            });
+
+            matched.sort((a, b) => a.distance_km - b.distance_km);
+            return matched;
+        }
+
+        function getBidiThresholdForEvent(eventType) {
+            if (eventType.includes('Conector') || eventType.includes('Connector')) return bidiThresholds.connector;
+            if (eventType.includes('Empalme') || eventType.includes('Splice')) return bidiThresholds.splice;
+            return null;
+        }
+
+        function renderBidiEventsTable() {
+            document.getElementById('bidiEventsBody').innerHTML = bidiMatchedEvents.map((evt, i) => {
+                const thr = getBidiThresholdForEvent(evt.event_type);
+                const avgAbs = Math.abs(evt.avg_loss);
+                const exceeded = thr !== null && avgAbs > thr;
+                const thrDisplay = thr !== null ? thr.toFixed(2) : '--';
+                const statusDisplay = thr !== null
+                    ? (exceeded ? `<span style="color:#fbbf24;font-weight:700;">${t('statusExceeds')}</span>` : `<span style="color:#34d399;">${t('statusOk')}</span>`)
+                    : '--';
+                const displayType = translateEventType(evt.event_type);
+                const lossABDisplay = evt.loss_ab !== null ? evt.loss_ab.toFixed(4) : `<span style="color:#5a6f8a;">${t('bidiUnmatched')}</span>`;
+                const lossBADisplay = evt.loss_ba !== null ? evt.loss_ba.toFixed(4) : `<span style="color:#5a6f8a;">${t('bidiUnmatched')}</span>`;
+                const avgClass = exceeded ? 'loss-exceeded' : 'bidi-avg-cell';
+
+                return `<tr>
+                    <td>${i + 1}</td>
+                    <td>${evt.distance_km}</td>
+                    <td><span class="event-badge ${getBadgeClass(evt.event_type)}">${displayType}</span></td>
+                    <td>${lossABDisplay}</td>
+                    <td>${lossBADisplay}</td>
+                    <td><span class="${avgClass}">${evt.avg_loss.toFixed(4)}</span></td>
+                    <td>${thrDisplay}</td>
+                    <td>${statusDisplay}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        function applyBidiThresholds() {
+            bidiThresholds.connector = parseFloat(document.getElementById('bidiThrConnector').value) || 0.5;
+            bidiThresholds.splice = parseFloat(document.getElementById('bidiThrSplice').value) || 0.25;
+            if (bidiMatchedEvents.length) renderBidiEventsTable();
+        }
+
+        function resetBidi() {
+            document.getElementById('bidiResults').style.display = 'none';
+            document.getElementById('bidiUploadArea').style.display = '';
+            if (bidiChart) { bidiChart.destroy(); bidiChart = null; }
+            bidiDataAB = null; bidiDataBA = null;
+            bidiFileAB = null; bidiFileBA = null;
+            bidiMatchedEvents = [];
+
+            // Reset dropzones
+            ['dropzoneAB', 'dropzoneBA'].forEach(id => {
+                const dz = document.getElementById(id);
+                dz.classList.remove('loaded');
+                dz.querySelector('p').textContent = t('bidiDropText');
+            });
+            document.getElementById('inputAB').value = '';
+            document.getElementById('inputBA').value = '';
+            document.getElementById('btnAnalyzeBidi').disabled = true;
+            hideError();
+        }
+
+        async function exportBidiPDF() {
+            if (!bidiDataAB || !bidiDataBA) return;
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const pageW = 210, pageH = 297, margin = 12, contentW = pageW - margin * 2;
+            const blue = [33, 58, 165], darkGray = [50, 50, 50], midGray = [100, 100, 100];
+            const lightBlueBg = [230, 237, 255], sectionBg = [245, 247, 255];
+            let y = margin;
+            const ab = bidiDataAB, ba = bidiDataBA;
+            const dateLocale = currentLang === 'en' ? 'en-US' : 'es-MX';
+            const dateStr = new Date().toLocaleDateString(dateLocale, { year: 'numeric', month: 'long', day: 'numeric' });
+
+            // ── Helper: section header bar ──
+            function sectionHeader(title) {
+                pdf.setFillColor(...blue);
+                pdf.rect(margin, y - 4, contentW, 6, 'F');
+                pdf.setTextColor(255, 255, 255);
+                pdf.setFont(undefined, 'bold');
+                pdf.setFontSize(9);
+                pdf.text(title, margin + 2, y);
+                y += 5;
+                pdf.setFont(undefined, 'normal');
+            }
+
+            // ── Helper: key-value row ──
+            // pairs: [[label, value], ...] or [[label, value, labelW, colW], ...]
+            function kvRow(pairs, labelW = 38) {
+                pdf.setFontSize(7.5);
+                const defaultColW = contentW / pairs.length;
+                let xCursor = margin;
+                pairs.forEach((p) => {
+                    const lw = p[2] || labelW;
+                    const cw = p[3] || defaultColW;
+                    pdf.setTextColor(...midGray);
+                    pdf.setFont(undefined, 'bold');
+                    pdf.text(p[0] + ':', xCursor, y);
+                    pdf.setFont(undefined, 'normal');
+                    pdf.setTextColor(...darkGray);
+                    pdf.text('' + (p[1] || 'N/A'), xCursor + lw, y);
+                    xCursor += cw;
+                });
+                y += 4.5;
+            }
+
+            // ── Helper: table header row ──
+            function tableHeader(cols, colPositions) {
+                pdf.setFillColor(...blue);
+                pdf.rect(margin, y - 3.5, contentW, 5.5, 'F');
+                pdf.setTextColor(255, 255, 255);
+                pdf.setFont(undefined, 'bold');
+                pdf.setFontSize(6.5);
+                cols.forEach((h, i) => pdf.text(h, colPositions[i], y));
+                y += 4.5;
+                pdf.setFont(undefined, 'normal');
+            }
+
+            // ── Helper: check page break ──
+            function checkPage(needed = 12) {
+                if (y + needed > pageH - 15) { pdf.addPage(); y = margin; return true; }
+                return false;
+            }
+
+            // ── Helper: footer on all pages ──
+            function addFooters() {
+                const total = pdf.internal.getNumberOfPages();
+                for (let p = 1; p <= total; p++) {
+                    pdf.setPage(p);
+                    pdf.setDrawColor(200, 200, 200);
+                    pdf.setLineWidth(0.3);
+                    pdf.line(margin, pageH - 12, pageW - margin, pageH - 12);
+                    pdf.setFontSize(6.5); pdf.setTextColor(150, 150, 150);
+                    pdf.text(t('pdfFooter'), margin, pageH - 8);
+                    pdf.text(t('pdfPage').replace('{p}', p).replace('{t}', total), pageW - margin - 22, pageH - 8);
+                    pdf.text(dateStr, pageW / 2 - 10, pageH - 8);
+                }
+            }
+
+            // ── Helper: sanitize text for jsPDF (→ not in default font) ──
+            function pdfSafe(str) { return ('' + (str || '')).replace(/→/g, '->'); }
+
+            // ══════════════════════════════════════════════════════
+            // PAGE 1-2: BIDIRECTIONAL ANALYSIS
+            // ══════════════════════════════════════════════════════
+
+            // ── Header with logo ──
+            if (logoBase64) { try { pdf.addImage(logoBase64, 'PNG', margin, y, 35, 21); } catch(e) {} }
+            pdf.setFontSize(15); pdf.setTextColor(...blue);
+            pdf.text(pdfSafe(t('bidiPdfTitle')), margin + 40, y + 7);
+            pdf.setFontSize(8); pdf.setTextColor(...midGray);
+            pdf.text('A->B: ' + bidiFileAB.name, margin + 40, y + 13);
+            pdf.text('B->A: ' + bidiFileBA.name, margin + 40, y + 18);
+            y += 24;
+            pdf.setDrawColor(...blue); pdf.setLineWidth(0.6);
+            pdf.line(margin, y, pageW - margin, y);
+            y += 6;
+
+            // ── IDENTIFICATION ──
+            sectionHeader(t('bidiPdfIdent'));
+            y += 1;
+            kvRow([[t('metaCableId'), ab.metadata.cable_id], [t('metaFiberId'), ab.metadata.fiber_id]]);
+            kvRow([[t('metaLocationA'), ab.metadata.location_a], [t('metaLocationB'), ab.metadata.location_b]]);
+            kvRow([[t('metaFiberType'), ab.metadata.fiber_type], [t('pdfDate'), dateStr]]);
+            y += 2;
+
+            // ── EQUIPMENT for both directions ──
+            // Custom col widths: Fabricante 62mm, Modelo 68mm, Serie 56mm = 186mm total
+            sectionHeader(pdfSafe(t('bidiPdfEquipAB')) + '  (' + ab.metadata.location_a + ' -> ' + ab.metadata.location_b + ')');
+            y += 1;
+            kvRow([[t('metaManufacturer'), otdrBrand(ab.metadata), 30, 62], [t('metaModel'), ab.metadata.otdr_model, 28, 68], [t('metaSerial'), ab.metadata.otdr_serial, 24, 56]]);
+            kvRow([[t('metaModule'), ab.metadata.module, 30, 62], [t('metaModuleSerial'), ab.metadata.module_serial, 28, 68], [t('metaDateTime'), ab.metadata.date_time, 24, 56]]);
+            y += 2;
+
+            sectionHeader(pdfSafe(t('bidiPdfEquipBA')) + '  (' + ab.metadata.location_b + ' -> ' + ab.metadata.location_a + ')');
+            y += 1;
+            kvRow([[t('metaManufacturer'), otdrBrand(ba.metadata), 30, 62], [t('metaModel'), ba.metadata.otdr_model, 28, 68], [t('metaSerial'), ba.metadata.otdr_serial, 24, 56]]);
+            kvRow([[t('metaModule'), ba.metadata.module, 30, 62], [t('metaModuleSerial'), ba.metadata.module_serial, 28, 68], [t('metaDateTime'), ba.metadata.date_time, 24, 56]]);
+            y += 2;
+
+            // ── TEST PARAMETERS ──
+            sectionHeader(t('bidiPdfTestParams'));
+            y += 1;
+            kvRow([[t('wavelength'), ab.metadata.wavelength_nm], [t('metaIOR'), ab.metadata.index_of_refraction]]);
+            kvRow([[t('metaPulseWidth'), ab.metadata.pulse_width_ns + ' ns'], [t('metaRange'), ab.metadata.range_km + ' km']]);
+            if (ab.metadata.launch_reel_m) {
+                kvRow([[pdfSafe(t('metaLaunchReel') + ' A->B'), ab.metadata.launch_reel_m + ' m'], [pdfSafe(t('metaLaunchReel') + ' B->A'), (ba.metadata.launch_reel_m || 0) + ' m']]);
+            }
+            y += 2;
+
+            // ── RESULTS SUMMARY ──
+            const fiberLen = ab.summary.fiber_length_km;
+            const avgSpanLoss = ((ab.summary.total_loss_db + ba.summary.total_loss_db) / 2);
+            const avgLossKm = fiberLen > 0 ? (avgSpanLoss / fiberLen) : 0;
+            const spliceLosses = bidiMatchedEvents.filter(e =>
+                (e.event_type.includes('Empalme') || e.event_type.includes('Splice')) && e.matched
+            ).map(e => Math.abs(e.avg_loss));
+            const avgSpliceLoss = spliceLosses.length > 0 ? spliceLosses.reduce((a, b) => a + b, 0) / spliceLosses.length : 0;
+            const maxSpliceLoss = spliceLosses.length > 0 ? Math.max(...spliceLosses) : 0;
+
+            sectionHeader(t('bidiPdfResults'));
+            y += 1;
+            pdf.setFillColor(...lightBlueBg);
+            pdf.rect(margin, y - 3.5, contentW, 24, 'F');
+            pdf.setFontSize(8);
+            const resCol1 = margin + 3, resCol2 = margin + contentW / 2 + 3, resValOff = 50;
+            const resPairs = [
+                [[t('bidiPdfSpanLength'), fiberLen.toFixed(4) + ' km'], [t('bidiPdfSpanLoss'), avgSpanLoss.toFixed(4) + ' dB']],
+                [[t('bidiPdfAvgLossKm'), avgLossKm.toFixed(4) + ' dB/km'], [t('bidiPdfAvgSpliceLoss'), avgSpliceLoss.toFixed(4) + ' dB']],
+                [[t('bidiPdfMaxSpliceLoss'), maxSpliceLoss.toFixed(4) + ' dB'], [pdfSafe(t('orl') + ' A->B / B->A'), ab.summary.orl_db + ' / ' + ba.summary.orl_db + ' dB']],
+                [[pdfSafe(t('totalLoss') + ' A->B'), ab.summary.total_loss_db + ' dB'], [pdfSafe(t('totalLoss') + ' B->A'), ba.summary.total_loss_db + ' dB']],
+            ];
+            resPairs.forEach(row => {
+                pdf.setFont(undefined, 'bold'); pdf.setTextColor(...midGray);
+                pdf.text(row[0][0] + ':', resCol1, y);
+                pdf.setFont(undefined, 'normal'); pdf.setTextColor(...darkGray);
+                pdf.text(row[0][1], resCol1 + resValOff, y);
+                pdf.setFont(undefined, 'bold'); pdf.setTextColor(...midGray);
+                pdf.text(row[1][0] + ':', resCol2, y);
+                pdf.setFont(undefined, 'normal'); pdf.setTextColor(...darkGray);
+                pdf.text(row[1][1], resCol2 + resValOff, y);
+                y += 5.5;
+            });
+            y += 3;
+
+            // ── CHART ──
+            checkPage(60);
+            pdf.setFontSize(10); pdf.setTextColor(...blue); pdf.setFont(undefined, 'bold');
+            pdf.text(t('bidiTraceOverlay'), margin, y); y += 4;
+            pdf.setFont(undefined, 'normal');
+            try {
+                const chartCanvas = document.getElementById('bidiChart');
+                const chartImg = chartCanvas.toDataURL('image/png', 1.0);
+                const chartH = Math.min((contentW * chartCanvas.height) / chartCanvas.width, 65);
+                pdf.addImage(chartImg, 'PNG', margin, y, contentW, chartH);
+                y += chartH + 4;
+            } catch (e) {
+                pdf.setFontSize(8); pdf.setTextColor(...midGray);
+                pdf.text(t('pdfChartError'), margin, y); y += 6;
+            }
+
+            // ── EVENTS TABLE with Section rows (EXFO-style) ──
+            checkPage(20);
+            pdf.setFontSize(10); pdf.setTextColor(...blue); pdf.setFont(undefined, 'bold');
+            pdf.text(pdfSafe(t('bidiEventsTitle')), margin, y);
+            y += 5;
+            pdf.setFont(undefined, 'normal');
+
+            // Thresholds line
+            pdf.setFontSize(6.5); pdf.setTextColor(...midGray);
+            pdf.text(t('bidiPdfThresholds') + ':  ' + t('thrConnectorLabel') + ': ' + bidiThresholds.connector + ' dB  |  ' + t('thrSpliceLabel') + ': ' + bidiThresholds.splice + ' dB', margin, y);
+            y += 5;
+
+            // Column positions for the full EXFO-style table
+            // Tipo=30, #=8, Ubicacion=20, Largo=17, AttenProm=20, PerdProm=20, Acum=18, A->B=20, B->A=20, Estado=13 = 186
+            const cx = [margin, margin+30, margin+38, margin+58, margin+75, margin+95, margin+115, margin+135, margin+155, margin+175];
+            const fullHeaders = t('bidiPdfEvtHeadersFull').map(h => pdfSafe(h));
+            tableHeader(fullHeaders, cx);
+
+            // Build section+event rows
+            let cumLoss = 0;
+            let prevDist = 0;
+            const rowH = 4.5;
+
+            bidiMatchedEvents.forEach((evt, i) => {
+                checkPage(rowH * 2 + 2);
+                const dist = evt.distance_km;
+                const sectionLen = dist - prevDist;
+                const thr = getBidiThresholdForEvent(evt.event_type);
+                const avgAbs = Math.abs(evt.avg_loss);
+                const exceeded = thr !== null && avgAbs > thr;
+
+                // Section row (fiber between previous event and this one)
+                if (i > 0 && sectionLen > 0.001) {
+                    const sectionAttenKm = sectionLen > 0 ? (avgLossKm) : 0;
+                    const sectionLoss = sectionLen * avgLossKm;
+                    pdf.setFillColor(...sectionBg);
+                    pdf.rect(margin, y - 3.2, contentW, rowH, 'F');
+                    pdf.setFontSize(6); pdf.setTextColor(120, 120, 140);
+                    pdf.setFont(undefined, 'italic');
+                    pdf.text(t('bidiPdfSection'), cx[0], y);
+                    pdf.text('', cx[1], y);
+                    pdf.text(prevDist.toFixed(3) + ' - ' +dist.toFixed(3), cx[2], y);
+                    pdf.text(sectionLen.toFixed(3), cx[3], y);
+                    pdf.text(sectionAttenKm.toFixed(4), cx[4], y);
+                    pdf.setFont(undefined, 'normal');
+                    y += rowH;
+                }
+
+                // Event row
+                cumLoss += evt.avg_loss;
+                if (exceeded) {
+                    pdf.setFillColor(255, 250, 205);
+                    pdf.rect(margin, y - 3.2, contentW, rowH, 'F');
+                }
+
+                pdf.setFontSize(6.5); pdf.setTextColor(...darkGray);
+                pdf.setFont(undefined, 'normal');
+                pdf.text(translateEventType(evt.event_type), cx[0], y);
+                pdf.text('' + (i + 1), cx[1], y);
+                pdf.text(dist.toFixed(3), cx[2], y);
+                pdf.text(i > 0 ? sectionLen.toFixed(3) : '0.000', cx[3], y);
+                pdf.text(fiberLen > 0 ? avgLossKm.toFixed(4) : '--', cx[4], y);
+
+                // Average loss — bold + colored
+                if (exceeded) { pdf.setTextColor(200, 140, 0); pdf.setFont(undefined, 'bold'); }
+                else { pdf.setTextColor(0, 130, 80); pdf.setFont(undefined, 'bold'); }
+                pdf.text(evt.avg_loss.toFixed(4), cx[5], y);
+                pdf.setFont(undefined, 'normal'); pdf.setTextColor(...darkGray);
+
+                pdf.text(cumLoss.toFixed(4), cx[6], y);
+                pdf.text(evt.loss_ab !== null ? evt.loss_ab.toFixed(4) : '--', cx[7], y);
+                pdf.text(evt.loss_ba !== null ? evt.loss_ba.toFixed(4) : '--', cx[8], y);
+
+                // Status
+                if (thr !== null) {
+                    if (exceeded) { pdf.setTextColor(200, 140, 0); pdf.setFont(undefined, 'bold'); pdf.text(t('statusExceeds'), cx[9], y); }
+                    else { pdf.setTextColor(0, 150, 80); pdf.text(t('statusOk'), cx[9], y); }
+                } else { pdf.setTextColor(...midGray); pdf.text('--', cx[9], y); }
+                pdf.setFont(undefined, 'normal'); pdf.setTextColor(...darkGray);
+
+                prevDist = dist;
+                y += rowH;
+            });
+
+            // End-of-fiber section row
+            if (fiberLen > prevDist + 0.001) {
+                const lastSec = fiberLen - prevDist;
+                pdf.setFillColor(...sectionBg);
+                pdf.rect(margin, y - 3.2, contentW, rowH, 'F');
+                pdf.setFontSize(6); pdf.setTextColor(120, 120, 140);
+                pdf.setFont(undefined, 'italic');
+                pdf.text(t('bidiPdfSection'), cx[0], y);
+                pdf.text(prevDist.toFixed(3) + ' - ' +fiberLen.toFixed(3), cx[2], y);
+                pdf.text(lastSec.toFixed(3), cx[3], y);
+                pdf.setFont(undefined, 'normal');
+                y += rowH;
+            }
+
+            // ══════════════════════════════════════════════════════
+            // PAGE 3-4: INDIVIDUAL A→B REPORT
+            // ══════════════════════════════════════════════════════
+            pdf.addPage();
+            y = margin;
+            renderIndividualDirectionPDF(pdf, ab, bidiFileAB.name, 'A -> B', margin, contentW, pageW, pageH, blue, darkGray, midGray, lightBlueBg);
+
+            // ══════════════════════════════════════════════════════
+            // PAGE 5-6: INDIVIDUAL B->A REPORT
+            // ══════════════════════════════════════════════════════
+            pdf.addPage();
+            y = margin;
+            renderIndividualDirectionPDF(pdf, ba, bidiFileBA.name, 'B -> A', margin, contentW, pageW, pageH, blue, darkGray, midGray, lightBlueBg);
+
+            // ── Footers ──
+            addFooters();
+
+            pdf.save('reporte_otdr_bidireccional.pdf');
+        }
+
+        function renderIndividualDirectionPDF(pdf, data, filename, dirLabel, margin, contentW, pageW, pageH, blue, darkGray, midGray, lightBlueBg) {
+            let y = margin;
+            const m = data.metadata, s = data.summary;
+
+            // Header
+            if (logoBase64) { try { pdf.addImage(logoBase64, 'PNG', margin, y, 30, 18); } catch(e) {} }
+            pdf.setFontSize(13); pdf.setTextColor(...blue);
+            pdf.text(t('bidiPdfIndivTitle') + ' - ' + dirLabel, margin + 34, y + 7);
+            pdf.setFontSize(7.5); pdf.setTextColor(...midGray);
+            pdf.text(filename, margin + 34, y + 12);
+            y += 20;
+            pdf.setDrawColor(...blue); pdf.setLineWidth(0.4);
+            pdf.line(margin, y, pageW - margin, y);
+            y += 5;
+
+            // Identification
+            pdf.setFillColor(...blue);
+            pdf.rect(margin, y - 4, contentW, 6, 'F');
+            pdf.setTextColor(255, 255, 255); pdf.setFont(undefined, 'bold'); pdf.setFontSize(8);
+            pdf.text(t('bidiPdfIdent'), margin + 2, y);
+            y += 4; pdf.setFont(undefined, 'normal');
+
+            const kvPairs = [
+                [[t('metaCableId'), m.cable_id], [t('metaFiberId'), m.fiber_id]],
+                [[t('metaLocationA'), m.location_a], [t('metaLocationB'), m.location_b]],
+                [[t('metaFiberType'), m.fiber_type]],
+                [[t('metaManufacturer'), otdrBrand(m), 30, 62], [t('metaModel'), m.otdr_model, 28, 68], [t('metaSerial'), m.otdr_serial, 24, 56]],
+                [[t('metaModule'), m.module, 30, 62], [t('metaModuleSerial'), m.module_serial, 28, 68]],
+                [[t('metaDateTime'), m.date_time]],
+                [[t('wavelength'), m.wavelength_nm], [t('metaIOR'), m.index_of_refraction]],
+                [[t('metaPulseWidth'), m.pulse_width_ns + ' ns'], [t('metaRange'), m.range_km + ' km']],
+            ];
+            pdf.setFontSize(7.5);
+            kvPairs.forEach(row => {
+                const defaultColW = contentW / row.length;
+                let xCursor = margin;
+                row.forEach((p) => {
+                    const lw = p[2] || 38;
+                    const cw = p[3] || defaultColW;
+                    pdf.setTextColor(...midGray); pdf.setFont(undefined, 'bold');
+                    pdf.text(p[0] + ':', xCursor, y);
+                    pdf.setFont(undefined, 'normal'); pdf.setTextColor(...darkGray);
+                    pdf.text('' + (p[1] || 'N/A'), xCursor + lw, y);
+                    xCursor += cw;
+                });
+                y += 4.5;
+            });
+            y += 3;
+
+            // Results
+            const lossKm = s.fiber_length_km > 0 ? (s.total_loss_db / s.fiber_length_km) : 0;
+            pdf.setFillColor(...lightBlueBg);
+            pdf.rect(margin, y - 3, contentW, 14, 'F');
+            pdf.setFontSize(8);
+            const rv1x = margin + 3, rv2x = margin + contentW / 2 + 3, rvOff = 45;
+            [[t('fiberLength'), s.fiber_length_km + ' km'], [t('totalLoss'), s.total_loss_db + ' dB']].forEach((p, i) => {
+                const x = i === 0 ? rv1x : rv2x;
+                pdf.setFont(undefined, 'bold'); pdf.setTextColor(...midGray);
+                pdf.text(p[0] + ':', x, y);
+                pdf.setFont(undefined, 'normal'); pdf.setTextColor(...darkGray);
+                pdf.text(p[1], x + rvOff, y);
+            });
+            y += 5;
+            [[t('bidiPdfAvgLossKm'), lossKm.toFixed(4) + ' dB/km'], [t('orl'), s.orl_db + ' dB']].forEach((p, i) => {
+                const x = i === 0 ? rv1x : rv2x;
+                pdf.setFont(undefined, 'bold'); pdf.setTextColor(...midGray);
+                pdf.text(p[0] + ':', x, y);
+                pdf.setFont(undefined, 'normal'); pdf.setTextColor(...darkGray);
+                pdf.text(p[1], x + rvOff, y);
+            });
+            y += 8;
+
+            // Events table for this direction
+            pdf.setFillColor(...blue);
+            pdf.rect(margin, y - 4, contentW, 6, 'F');
+            pdf.setTextColor(255, 255, 255); pdf.setFont(undefined, 'bold'); pdf.setFontSize(8);
+            pdf.text(t('eventsTable'), margin + 2, y);
+            y += 5; pdf.setFont(undefined, 'normal');
+
+            const icx = [margin, margin + 10, margin + 40, margin + 70, margin + 100, margin + 130, margin + 155];
+            const iHeaders = ['#', t('thType'), t('thDistance'), t('thLoss'), t('thReflection'), t('thSlope'), t('thStatus')];
+            pdf.setFillColor(220, 225, 240);
+            pdf.rect(margin, y - 3, contentW, 5, 'F');
+            pdf.setTextColor(...darkGray); pdf.setFont(undefined, 'bold'); pdf.setFontSize(6.5);
+            iHeaders.forEach((h, i) => pdf.text(h, icx[i], y));
+            y += 4.5;
+            pdf.setFont(undefined, 'normal');
+
+            let iCumLoss = 0;
+            data.events.forEach((evt, idx) => {
+                if (y + 5 > pageH - 15) { pdf.addPage(); y = margin; }
+                iCumLoss += evt.splice_loss_db;
+                const thr = getBidiThresholdForEvent(evt.event_type);
+                const loss = Math.abs(evt.splice_loss_db);
+                const exceeded = thr !== null && loss > thr;
+
+                if (exceeded) { pdf.setFillColor(255, 250, 205); pdf.rect(margin, y - 3.2, contentW, 4.5, 'F'); }
+
+                pdf.setFontSize(6.5); pdf.setTextColor(...darkGray);
+                pdf.text('' + evt.number, icx[0], y);
+                pdf.text(translateEventType(evt.event_type), icx[1], y);
+                pdf.text('' + evt.distance_km, icx[2], y);
+                if (exceeded) { pdf.setTextColor(200, 140, 0); pdf.setFont(undefined, 'bold'); }
+                pdf.text('' + evt.splice_loss_db, icx[3], y);
+                pdf.setFont(undefined, 'normal'); pdf.setTextColor(...darkGray);
+                pdf.text('' + (evt.reflection_db || '--'), icx[4], y);
+                pdf.text('' + (evt.slope_db_km || '--'), icx[5], y);
+                if (thr !== null) {
+                    if (exceeded) { pdf.setTextColor(200, 140, 0); pdf.setFont(undefined, 'bold'); pdf.text(t('statusExceeds'), icx[6], y); }
+                    else { pdf.setTextColor(0, 150, 80); pdf.text(t('statusOk'), icx[6], y); }
+                } else { pdf.setTextColor(...midGray); pdf.text('--', icx[6], y); }
+                pdf.setFont(undefined, 'normal');
+                y += 4.5;
+            });
         }
     </script>
 </body>
